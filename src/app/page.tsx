@@ -457,8 +457,8 @@ export default async function HomePage() {
             <img src="https://royalattin.sch.id/assets/img/logo-royal-at-tin-removebg.png" alt="Royal At-Tin" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} />
             <img src="https://royalattin.sch.id/assets/img/logo-yayasan-only-removebg.png" alt="Yayasan" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} />
           </div>
-          <p>© {new Date().getFullYear()} {info.name}. Seluruh hak cipta dilindungi.</p>
-          <p style={{ fontSize: '0.75rem', marginTop: '6px', opacity: 0.5 }}>Berdasarkan Arsitektur MVC terintegrasi Google Sheets Database & Vercel Serverless.</p>
+          <p>© {new Date().getFullYear()} Royal Attin. Seluruh hak cipta dilindungi.</p>
+          <p style={{ fontSize: '0.75rem', marginTop: '6px', opacity: 0.5 }}>Development by F-Develop</p>
         </div>
       </footer>
     </div>
