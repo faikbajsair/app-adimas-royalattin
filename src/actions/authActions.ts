@@ -23,10 +23,19 @@ export async function loginAction(prevState: any, formData: FormData) {
   try {
     const userModel = new UserModel();
     
-    // Inisialisasi default admin jika database masih kosong
-    await userModel.initAdminIfEmpty();
+    let user = null;
+    try {
+      user = await userModel.findByUsername(username);
+    } catch (err) {
+      console.log('Sheet Users belum terinisialisasi, membuat default admin...');
+    }
 
-    const user = await userModel.findByUsername(username);
+    if (!user) {
+      // Jalankan inisialisasi lambat hanya jika user tidak ditemukan (database kosong/baru)
+      await userModel.initAdminIfEmpty();
+      user = await userModel.findByUsername(username);
+    }
+
     if (!user) {
       return { error: 'Username atau password salah' };
     }

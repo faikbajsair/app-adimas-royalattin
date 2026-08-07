@@ -45,60 +45,84 @@ export default async function DashboardPage() {
     // 1. Data Admin & Yayasan (Fase 2)
     if (['admin', 'admin_kbtk', 'admin_sd', 'admin_nura', 'yayasan', 'kepsek'].includes(user.role)) {
       const ppdbModel = new PpdbModel();
-      await ppdbModel.initDummyRegistrantsIfEmpty();
-      await syncPpdbAccountsToUsersAction();
-      ppdbRegistrants = await ppdbModel.getAll();
-
       const eventModel = new EventModel();
-      events = await eventModel.getEvents();
-
       const registrantModel = new EventRegistrantModel();
-      eventRegistrants = await registrantModel.getRegistrants();
-
       const quotaModel = new QuotaModel();
-      await quotaModel.initQuotasIfEmpty();
-      quotas = await quotaModel.getAll();
+
+      // Jalankan inisialisasi lambat jika kosong secara paralel terlebih dahulu
+      await Promise.all([
+        ppdbModel.initDummyRegistrantsIfEmpty(),
+        quotaModel.initQuotasIfEmpty()
+      ]);
+
+      // Ambil data dashboard secara paralel
+      const [ppdbData, eventsData, regData, quotasData] = await Promise.all([
+        ppdbModel.getAll(),
+        eventModel.getEvents(),
+        registrantModel.getRegistrants(),
+        quotaModel.getAll(),
+        syncPpdbAccountsToUsersAction() // Sync dijalankan di latar belakang secara paralel
+      ]);
+
+      ppdbRegistrants = ppdbData;
+      events = eventsData;
+      eventRegistrants = regData;
+      quotas = quotasData;
     }
 
     // 2. Data Orang Tua (Fase 3)
     if (user.role === 'orang_tua') {
       const childModel = new ChildModel();
-      // Inisialisasi data anak dummy otomatis jika kosong untuk kemudahan testing user
       await childModel.initSampleChildrenIfEmpty(user.id, user.name);
       
-      parentChildren = await childModel.getChildrenByParentId(user.id);
-      
-      // Ambil tugas-tugas untuk kelas anak-anak (asumsi Kelas A)
       const taskModel = new TaskModel();
-      parentClassTasks = await taskModel.getTasksByClass('Kelas A');
+      
+      // Ambil data dasar secara paralel
+      const [childrenData, tasksData] = await Promise.all([
+        childModel.getChildrenByParentId(user.id),
+        taskModel.getTasksByClass('Kelas A')
+      ]);
+      
+      parentChildren = childrenData;
+      parentClassTasks = tasksData;
 
       const attendanceModel = new AttendanceModel();
       const submissionModel = new SubmissionModel();
 
-      for (const child of parentChildren) {
-        parentChildAttendance[child.id] = await attendanceModel.getAttendanceByChildId(child.id);
-        parentChildSubmissions[child.id] = await submissionModel.getSubmissionsByChild(child.id);
-      }
+      // Ambil data absensi dan tugas seluruh anak secara paralel
+      await Promise.all(parentChildren.map(async (child) => {
+        const [att, sub] = await Promise.all([
+          attendanceModel.getAttendanceByChildId(child.id),
+          submissionModel.getSubmissionsByChild(child.id)
+        ]);
+        parentChildAttendance[child.id] = att;
+        parentChildSubmissions[child.id] = sub;
+      }));
     }
 
     // 3. Data Guru (Fase 3)
     if (user.role === 'guru') {
       const childModel = new ChildModel();
-      // Mengambil daftar siswa kelas A
-      classChildren = await childModel.getChildrenByClass('Kelas A');
-
-      // Mengambil daftar tugas kelas A
       const taskModel = new TaskModel();
-      classTasks = await taskModel.getTasksByClass('Kelas A');
+      const attendanceModel = new AttendanceModel();
+
+      // Ambil data siswa, tugas, dan absensi secara paralel
+      const [childrenData, tasksData, attData] = await Promise.all([
+        childModel.getChildrenByClass('Kelas A'),
+        taskModel.getTasksByClass('Kelas A'),
+        attendanceModel.getAttendanceByDate(today)
+      ]);
+
+      classChildren = childrenData;
+      classTasks = tasksData;
+      todayAttendance = attData;
 
       const submissionModel = new SubmissionModel();
-      for (const t of classTasks) {
+      
+      // Ambil seluruh submission untuk setiap tugas secara paralel
+      await Promise.all(classTasks.map(async (t) => {
         taskSubmissions[t.id] = await submissionModel.getSubmissionsByTaskId(t.id);
-      }
-
-      // Mengambil absensi hari ini
-      const attendanceModel = new AttendanceModel();
-      todayAttendance = await attendanceModel.getAttendanceByDate(today);
+      }));
     }
   } catch (e) {
     console.error('Gagal memuat data dashboard:', e);
