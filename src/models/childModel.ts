@@ -79,14 +79,14 @@ export class ChildModel extends BaseModel {
     const all = await this.getAll();
     if (all.length === 0) {
       await this.createChild({
-        nama_anak: 'Lionel Adimas',
+        nama_anak: 'Lionel Royal Attin',
         orang_tua_id: parentUserId,
         nama_orang_tua: parentName,
         kelas: 'Kelas A',
         tanggal_lahir: '2021-05-12'
       });
       await this.createChild({
-        nama_anak: 'Zhafran Adimas',
+        nama_anak: 'Zhafran Royal Attin',
         orang_tua_id: parentUserId,
         nama_orang_tua: parentName,
         kelas: 'Kelas A',

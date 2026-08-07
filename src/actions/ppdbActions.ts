@@ -263,7 +263,7 @@ export async function updatePpdbStatusByAdminAction(
             username: updates.siswa_username,
             password: updates.siswa_password,
             role: 'orang_tua',
-            name: raw.nama_orang_tua || 'Wali Murid Adimas'
+            name: raw.nama_orang_tua || 'Wali Murid Royal Attin'
           });
           console.log(`Auto-created User account for student portal: ${updates.siswa_username}`);
         }
@@ -342,7 +342,7 @@ export async function syncPpdbAccountsToUsersAction() {
           username: reg.siswa_username,
           password: reg.siswa_password,
           role: 'orang_tua',
-          name: reg.nama_orang_tua || 'Wali Murid Adimas'
+          name: reg.nama_orang_tua || 'Wali Murid Royal Attin'
         });
         count++;
         console.log(`Synced student portal account: ${reg.siswa_username}`);
