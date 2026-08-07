@@ -18,7 +18,7 @@ export default async function EventsPage() {
     <div className={styles.container}>
       <header style={{ marginBottom: '40px', textAlign: 'center' }}>
         <h1 className={styles.title}>Agenda & Event Sekolah</h1>
-        <p className={styles.subtitle}>KB-TK Adimas - Islamic Character School</p>
+        <p className={styles.subtitle}>KB-TK Royal Attin - Islamic Character School</p>
       </header>
 
       {/* List Event (Client Interactive Component) */}

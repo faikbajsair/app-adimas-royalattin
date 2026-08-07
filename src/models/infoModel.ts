@@ -26,11 +26,11 @@ export class SchoolInfoModel extends BaseModel {
     
     // Nilai default jika database masih kosong
     const info: Record<string, string> = {
-      name: 'KB-TK ADIMAS',
+      name: 'KB-TK Royal Attin',
       sub_name: 'Islamic Character School',
       address: 'Jalan Vila Nusa Indah Raya, Blok M-1, Gunung Putri, Bogor',
       tagline: 'Membentuk Generasi Karakter Islami yang Cerdas & Berakhlak Mulia',
-      logo_url: 'https://images.unsplash.com/photo-1594608661623-aa0bd3a69d28?q=80&w=200&auto=format&fit=crop',
+      logo_url: 'https://royalattin.sch.id/assets/img/logo-yayasan-only-removebg.png',
       youtube_url: 'https://youtube.com',
       instagram_url: 'https://instagram.com',
       whatsapp_admin: '6281234567890',

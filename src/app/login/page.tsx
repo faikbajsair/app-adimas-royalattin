@@ -46,9 +46,14 @@ export default function LoginPage() {
       <div className={`${styles.bgBlob} ${styles.blob2}`}></div>
 
       <div className={`glass-panel ${styles.loginCard}`}>
-        <div className={styles.cardHeader}>
-          <h2 className={styles.title}>Portal ADIMAS</h2>
-          <p className={styles.subtitle}>Gunakan akun terdaftar Anda untuk masuk portal</p>
+        <div className={styles.cardHeader} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', marginBottom: '8px' }}>
+            <img src="https://royalattin.sch.id/assets/img/logo-taman-main-removebg.png" alt="Taman Main" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} />
+            <img src="https://royalattin.sch.id/assets/img/logo-royal-at-tin-removebg.png" alt="Royal At-Tin" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} />
+            <img src="https://royalattin.sch.id/assets/img/logo-yayasan-only-removebg.png" alt="Yayasan" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} />
+          </div>
+          <h2 className={styles.title} style={{ margin: 0 }}>Portal Royal Attin</h2>
+          <p className={styles.subtitle} style={{ margin: 0 }}>Gunakan akun terdaftar Anda untuk masuk portal</p>
         </div>
 
         <form onSubmit={handleLogin}>

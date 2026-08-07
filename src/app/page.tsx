@@ -14,11 +14,11 @@ export default async function HomePage() {
     console.error('Gagal mengambil data profil sekolah dari Sheets:', e);
     // Data fallback jika koneksi database belum dikonfigurasi di environment variables
     info = {
-      name: 'KB-TK ADIMAS',
+      name: 'KB-TK Royal Attin',
       sub_name: 'Islamic Character School',
       address: 'Jalan Vila Nusa Indah Raya, Blok M-1, Gunung Putri, Bogor',
       tagline: 'Membentuk Generasi Karakter Islami yang Cerdas & Berakhlak Mulia',
-      logo_url: 'https://images.unsplash.com/photo-1594608661623-aa0bd3a69d28?q=80&w=200&auto=format&fit=crop',
+      logo_url: 'https://royalattin.sch.id/assets/img/logo-yayasan-only-removebg.png',
       youtube_url: 'https://youtube.com',
       instagram_url: 'https://instagram.com',
       whatsapp_admin: '6281234567890',
@@ -32,7 +32,11 @@ export default async function HomePage() {
       <header className={styles.header}>
         <div className={`${styles.container} ${styles.header}`} style={{ padding: 0 }}>
           <div className={styles.brand}>
-            <img src={info.logo_url} alt="Logo" className={styles.logo} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginRight: '10px' }}>
+              <img src="https://royalattin.sch.id/assets/img/logo-taman-main-removebg.png" alt="Taman Main" style={{ height: '32px', width: 'auto', objectFit: 'contain' }} />
+              <img src="https://royalattin.sch.id/assets/img/logo-royal-at-tin-removebg.png" alt="Royal At-Tin" style={{ height: '32px', width: 'auto', objectFit: 'contain' }} />
+              <img src="https://royalattin.sch.id/assets/img/logo-yayasan-only-removebg.png" alt="Yayasan" style={{ height: '32px', width: 'auto', objectFit: 'contain' }} />
+            </div>
             <span className={styles.brandName}>{info.name}</span>
           </div>
           <nav className={styles.nav}>
@@ -71,7 +75,7 @@ export default async function HomePage() {
             <span className={styles.cardIcon}>🎒</span>
             <h3 className={styles.cardTitle}>Pendaftaran Murid Baru (PPDB)</h3>
             <p className={styles.cardDesc}>
-              Formulir online resmi untuk pendaftaran siswa baru KB-TK Adimas. Efektif, efisien, dan langsung terhubung dengan admin sekolah.
+              Formulir online resmi untuk pendaftaran siswa baru KB-TK Royal Attin. Efektif, efisien, dan langsung terhubung dengan admin sekolah.
             </p>
             <Link href="/login" className="btn-primary" style={{ marginTop: 'auto' }}>
               Mulai Daftar
@@ -112,7 +116,7 @@ export default async function HomePage() {
               <div>
                 <h4 style={{ marginBottom: '8px', fontSize: '1.2rem' }}>{info.name}</h4>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
-                  KB-TK Adimas merupakan lembaga pendidikan anak usia dini yang berfokus pada pembentukan akhlakul karimah, karakter kemandirian anak, serta stimulasi kecerdasan motorik dan kognitif secara optimal.
+                  KB-TK Royal Attin merupakan lembaga pendidikan anak usia dini yang berfokus pada pembentukan akhlakul karimah, karakter kemandirian anak, serta stimulasi kecerdasan motorik dan kognitif secara optimal.
                 </p>
               </div>
 

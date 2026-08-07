@@ -123,7 +123,7 @@ export class UserModel extends BaseModel {
         username: 'yayasan',
         password: 'yayasan123_adimas',
         role: 'yayasan',
-        name: 'Yayasan Adimas',
+        name: 'Yayasan Royal Attin',
       });
       console.log('Default Yayasan created: username yayasan / password yayasan123_adimas');
     }

@@ -1280,7 +1280,7 @@ export default function PpdbPage() {
                       ⏳ Menunggu Penyerahan Akses Akun Portal
                     </h4>
                     <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
-                      Seluruh proses keuangan daftar ulang Anda telah **Lunas & Terverifikasi**. Akun login portal siswa baru Anda sedang digenerate oleh Tim IT Adimas. Detail username dan password login akan muncul di kolom status ini sesaat lagi.
+                      Seluruh proses keuangan daftar ulang Anda telah **Lunas & Terverifikasi**. Akun login portal siswa baru Anda sedang digenerate oleh Tim IT Royal Attin. Detail username dan password login akan muncul di kolom status ini sesaat lagi.
                     </p>
                   </div>
                 )}
@@ -1295,7 +1295,7 @@ export default function PpdbPage() {
                       Pendaftaran ulang anak Anda telah **Selesai Lengkap**. Di bawah ini adalah kredensial portal masuk resmi siswa baru Anda untuk digunakan dalam mengakses menu tugas dan raport akademik:
                     </p>
                     <div style={{ backgroundColor: 'var(--bg-primary)', padding: '16px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', fontSize: '0.9rem', marginBottom: '16px' }}>
-                      <div style={{ marginBottom: '8px' }}>🔑 Username: <strong>{activeReg.siswa_username || 'siswa_baru_adimas'}</strong></div>
+                      <div style={{ marginBottom: '8px' }}>🔑 Username: <strong>{activeReg.siswa_username || 'siswa_baru_royalattin'}</strong></div>
                       <div>🔒 Password: <strong>{activeReg.siswa_password || 'pass_siswa_123'}</strong></div>
                     </div>
                     <Link href="/login" className="btn-primary" style={{ display: 'inline-flex', padding: '8px 16px', fontSize: '0.85rem', textDecoration: 'none' }}>
@@ -1311,7 +1311,7 @@ export default function PpdbPage() {
                       🛑 Pendaftaran Selesai & Tidak Lanjut
                     </h4>
                     <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
-                      Calon siswa dinyatakan belum dapat diterima di KB-TK / SD Adimas berdasarkan hasil evaluasi observasi tim psikolog kami, atau karena pengajuan transfer pendaftaran ditolak admin. Terima kasih atas partisipasi pendaftaran Anda.
+                      Calon siswa dinyatakan belum dapat diterima di KB-TK / SD Royal Attin berdasarkan hasil evaluasi observasi tim psikolog kami, atau karena pengajuan transfer pendaftaran ditolak admin. Terima kasih atas partisipasi pendaftaran Anda.
                     </p>
                   </div>
                 )}
@@ -1452,7 +1452,7 @@ export default function PpdbPage() {
 
       {/* 📞 Tombol Bantuan WhatsApp Melayang (Fungsi Direction) */}
       <a
-        href="https://wa.me/6281290008811?text=Halo%20Admin%20Adimas,%20saya%20butuh%20bantuan%20terkait%20portal%20PPDB."
+        href="https://wa.me/6281290008811?text=Halo%20Admin%20Royal%20Attin,%20saya%20butuh%20bantuan%20terkait%20portal%20PPDB."
         target="_blank"
         style={{
           position: 'fixed',

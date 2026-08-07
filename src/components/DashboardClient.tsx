@@ -475,8 +475,12 @@ export default function DashboardClient({
     <div className={styles.layout}>
       {/* Sidebar */}
       <aside className={styles.sidebar}>
-        <div className={styles.brand}>
-          <img src={info.logo_url} alt="Logo" className={styles.logo} />
+        <div className={styles.brand} style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <img src="https://royalattin.sch.id/assets/img/logo-taman-main-removebg.png" alt="Taman Main" style={{ height: '24px', width: 'auto', objectFit: 'contain' }} />
+            <img src="https://royalattin.sch.id/assets/img/logo-royal-at-tin-removebg.png" alt="Royal At-Tin" style={{ height: '24px', width: 'auto', objectFit: 'contain' }} />
+            <img src="https://royalattin.sch.id/assets/img/logo-yayasan-only-removebg.png" alt="Yayasan" style={{ height: '24px', width: 'auto', objectFit: 'contain' }} />
+          </div>
           <span className={styles.brandName}>{info.name}</span>
         </div>
 
@@ -561,7 +565,7 @@ export default function DashboardClient({
             <div className={styles.header}>
               <div>
                 <h1 className={styles.welcomeTitle}>Halo, {user.name}!</h1>
-                <p className={styles.welcomeSubtitle}>Selamat datang di dashboard portal akademik KB-TK Adimas.</p>
+                <p className={styles.welcomeSubtitle}>Selamat datang di dashboard portal akademik KB-TK Royal Attin.</p>
               </div>
             </div>
 
@@ -590,7 +594,7 @@ export default function DashboardClient({
             <section className={`glass-panel ${styles.panel}`}>
               <h2 className={styles.panelTitle}>Informasi Portal Akademik</h2>
               <p style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                Selamat! Portal manajemen sekolah KB-TK Adimas Anda kini sudah terkonfigurasi menggunakan Apps Script Database Proxy. Anda dapat menggunakan menu sidebar untuk melakukan monitoring absensi harian dan pembagian tugas sekolah secara real-time.
+                Selamat! Portal manajemen sekolah KB-TK Royal Attin Anda kini sudah terkonfigurasi menggunakan Apps Script Database Proxy. Anda dapat menggunakan menu sidebar untuk melakukan monitoring absensi harian dan pembagian tugas sekolah secara real-time.
               </p>
               <div style={{ display: 'flex', gap: '16px' }}>
                 {['admin', 'admin_kbtk', 'admin_sd', 'admin_nura', 'yayasan'].includes(user.role) ? (
@@ -1078,7 +1082,7 @@ export default function DashboardClient({
                       
                       const getDynamicCredentials = () => {
                         const firstName = (reg.nama_anak || '').trim().split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
-                        const username = `${firstName || 'siswa'}_adimas`;
+                        const username = `${firstName || 'siswa'}_royalattin`;
 
                         let password = 'siswa123';
                         if (reg.tanggal_lahir) {
