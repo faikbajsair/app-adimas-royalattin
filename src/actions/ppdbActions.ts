@@ -1,0 +1,356 @@
+'use server';
+
+import { PpdbModel, PPDBRegistration } from '@/models/ppdbModel';
+import { QuotaModel } from '@/models/quotaModel';
+import { FeesModel } from '@/models/feesModel';
+import { UserModel } from '@/models/userModel';
+import { getCurrentUser } from './authActions';
+import { z } from 'zod';
+import { revalidatePath } from 'next/cache';
+import { writeFile, mkdir } from 'fs/promises';
+import { join } from 'path';
+
+// Helper function untuk menyimpan file upload secara lokal di public/uploads
+async function saveUploadedFile(file: any): Promise<string> {
+  if (!file || !(file instanceof File) || file.size === 0) {
+    return '';
+  }
+  try {
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    
+    // Direktori penyimpanan di public/uploads
+    const uploadDir = join(process.cwd(), 'public', 'uploads');
+    await mkdir(uploadDir, { recursive: true });
+    
+    // Beri nama unik menggunakan timestamp
+    const cleanFilename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+    const filePath = join(uploadDir, cleanFilename);
+    await writeFile(filePath, new Uint8Array(buffer));
+    
+    return `/uploads/${cleanFilename}`;
+  } catch (err: any) {
+    console.error('Error saveUploadedFile:', err.message);
+    return '';
+  }
+}
+
+const ppdbSchema = z.object({
+  nama_unit: z.string().min(1, 'Nama unit harus dipilih'),
+  tahun_ajaran: z.string().min(1, 'Tahun ajaran harus dipilih'),
+  nama_anak: z.string().min(2, 'Nama anak minimal 2 karakter'),
+  nama_orang_tua: z.string().min(2, 'Nama orang tua minimal 2 karakter'),
+  whatsapp: z.string().min(8, 'Nomor WhatsApp minimal 8 digit').regex(/^628[0-9]+$/, 'Format WA harus diawali 628xxx'),
+  alamat_rumah: z.string().min(5, 'Alamat rumah minimal 5 karakter'),
+  bukti_bayar_url: z.string().min(1, 'Bukti transfer biaya pendaftaran wajib diunggah'),
+  tanggal_lahir: z.string().min(1, 'Tanggal lahir anak wajib diisi')
+});
+
+// Action mengambil kuota unit + tahun ajaran
+export async function getQuotaAction(unit: string, ta: string) {
+  if (!unit || !ta) return { total: 50, terisi: 0, sisa: 50 };
+  try {
+    const quotaModel = new QuotaModel();
+    // Pastikan default quotas terisi saat load
+    await quotaModel.initQuotasIfEmpty();
+    const res = await quotaModel.getQuota(unit, ta);
+    const sisa = res.total - res.terisi;
+    return { total: res.total, terisi: res.terisi, sisa: sisa < 0 ? 0 : sisa };
+  } catch (e: any) {
+    console.error('Error getQuotaAction:', e.message);
+    return { total: 50, terisi: 0, sisa: 50 };
+  }
+}
+
+// Action mendaftar PPDB baru
+export async function submitPpdbRegistrationAction(prevState: any, formData: FormData) {
+  const nama_unit = formData.get('nama_unit') as string;
+  const tahun_ajaran = formData.get('tahun_ajaran') as string;
+  const nama_anak = formData.get('nama_anak') as string;
+  const nama_orang_tua = formData.get('nama_orang_tua') as string;
+  const whatsapp = formData.get('whatsapp') as string;
+  const alamat_rumah = formData.get('alamat_rumah') as string;
+  const tanggal_lahir = formData.get('tanggal_lahir') as string;
+  
+  // Ambil file bukti bayar dari upload galeri
+  const bukti_bayar_file = formData.get('bukti_bayar_file');
+  const bukti_bayar_url = await saveUploadedFile(bukti_bayar_file);
+
+  const validation = ppdbSchema.safeParse({
+    nama_unit,
+    tahun_ajaran,
+    nama_anak,
+    nama_orang_tua,
+    whatsapp,
+    alamat_rumah,
+    bukti_bayar_url,
+    tanggal_lahir
+  });
+
+  if (!validation.success) {
+    return { error: validation.error.errors[0].message };
+  }
+
+  try {
+    const quotaModel = new QuotaModel();
+    const quota = await quotaModel.getQuota(nama_unit, tahun_ajaran);
+    if (quota.total - quota.terisi <= 0) {
+      return { error: 'Pendaftaran gagal! Kuota pendaftaran untuk unit dan tahun ajaran tersebut sudah penuh.' };
+    }
+
+    const ppdbModel = new PpdbModel();
+    const noPendaftaran = await ppdbModel.createRegistration({
+      nama_unit,
+      tahun_ajaran,
+      nama_anak,
+      nama_orang_tua,
+      whatsapp,
+      alamat_rumah,
+      bukti_bayar_url,
+      tanggal_lahir
+    });
+
+    // Kurangi kuota dengan menambah kuota terisi
+    await quotaModel.incrementQuota(nama_unit, tahun_ajaran);
+
+    return { success: true, noPendaftaran };
+  } catch (e: any) {
+    console.error('Error submitPpdbRegistrationAction:', e.message);
+    return { error: 'Koneksi database bermasalah. Coba beberapa saat lagi.' };
+  }
+}
+
+// Action mencari pendaftaran berdasarkan no pendaftaran atau WA
+export async function searchPpdbAction(query: string) {
+  if (!query || query.trim() === '') {
+    return { error: 'Nomor pendaftaran atau No WA harus diisi' };
+  }
+
+  const cleanQuery = query.trim();
+  try {
+    const ppdbModel = new PpdbModel();
+    if (cleanQuery.startsWith('REG-')) {
+      const match = await ppdbModel.findByRegistrationNo(cleanQuery);
+      return { success: true, data: match ? [match] : [] };
+    } else {
+      const matches = await ppdbModel.findByWhatsApp(cleanQuery);
+      return { success: true, data: matches };
+    }
+  } catch (e: any) {
+    console.error('Error searchPpdbAction:', e.message);
+    return { error: 'Pencarian gagal. Periksa koneksi database.' };
+  }
+}
+
+// Action memilih metode pembayaran (Cash / Angsuran) oleh Orang Tua
+export async function selectPaymentMethodAction(id: string, metode: 'Cash' | 'Angsuran') {
+  try {
+    const ppdbModel = new PpdbModel();
+    const raw = await ppdbModel.findBy('id', id);
+    if (!raw) return { error: 'Pendaftaran tidak ditemukan.' };
+
+    const today = new Date();
+    
+    // Hitung tanggal tenggat pembayaran
+    const format = (d: Date) => d.toISOString().split('T')[0];
+    const d1 = new Date(today); d1.setDate(today.getDate() + 7);
+    const d2 = new Date(today); d2.setDate(today.getDate() + 30);
+    const d3 = new Date(today); d3.setDate(today.getDate() + 60);
+
+    const updated: any = {
+      ...raw,
+      metode_pembayaran: metode,
+      status: metode === 'Cash' ? 'Menunggu Pembayaran Full Payment' : 'Menunggu Pembayaran Angsuran 1',
+      tenggat_full_payment: metode === 'Cash' ? format(d1) : '',
+      tenggat_angsuran_1: metode === 'Angsuran' ? format(d1) : '',
+      tenggat_angsuran_2: metode === 'Angsuran' ? format(d2) : '',
+      tenggat_angsuran_3: metode === 'Angsuran' ? format(d3) : '',
+    };
+
+    await ppdbModel.updateRegistration(Number(raw._rowNum), updated);
+    revalidatePath('/ppdb');
+    return { success: true };
+  } catch (e: any) {
+    console.error('Error selectPaymentMethodAction:', e.message);
+    return { error: 'Gagal memperbarui metode pembayaran.' };
+  }
+}
+
+// Action mengunggah bukti pembayaran angsuran / full payment oleh Orang Tua
+export async function uploadQuotaPaymentProofAction(
+  id: string,
+  field: 'bukti_angsuran_1' | 'bukti_angsuran_2' | 'bukti_angsuran_3' | 'bukti_full_payment',
+  formData: FormData
+) {
+  const file = formData.get('bukti_file');
+  const url = await saveUploadedFile(file);
+  
+  if (!url || url.trim() === '') {
+    return { error: 'Berkas file bukti transfer wajib diunggah.' };
+  }
+
+  try {
+    const ppdbModel = new PpdbModel();
+    const raw = await ppdbModel.findBy('id', id);
+    if (!raw) return { error: 'Pendaftaran tidak ditemukan.' };
+
+    // Update status berdasarkan tahapan pembayaran yang diunggah
+    let nextStatus = raw.status;
+    if (field === 'bukti_angsuran_1') nextStatus = 'Menunggu Pembayaran Angsuran 2';
+    else if (field === 'bukti_angsuran_2') nextStatus = 'Menunggu Pembayaran Angsuran 3';
+    else if (field === 'bukti_angsuran_3') nextStatus = 'Menunggu Username & Password';
+    else if (field === 'bukti_full_payment') nextStatus = 'Menunggu Username & Password';
+
+    const updated: any = {
+      ...raw,
+      [field]: url,
+      status: nextStatus
+    };
+
+    await ppdbModel.updateRegistration(Number(raw._rowNum), updated);
+    revalidatePath('/ppdb');
+    return { success: true };
+  } catch (e: any) {
+    console.error('Error uploadQuotaPaymentProofAction:', e.message);
+    return { error: 'Gagal mengirim bukti transfer.' };
+  }
+}
+
+// Action pembaruan status pendaftaran dari sisi Admin (Psikotes, Verifikasi, Akun Siswa)
+export async function updatePpdbStatusByAdminAction(
+  id: string,
+  updates: {
+    status?: any;
+    tanggal_psikotest?: string;
+    lokasi_psikotest?: string;
+    hasil_psikotest?: 'LULUS' | 'TIDAK LULUS' | '';
+    surat_penerimaan_url?: string;
+    siswa_username?: string;
+    siswa_password?: string;
+  }
+) {
+  const user = await getCurrentUser();
+  if (!user || (user.role !== 'admin' && user.role !== 'yayasan')) {
+    return { error: 'Anda tidak memiliki hak akses untuk tindakan ini.' };
+  }
+
+  try {
+    const ppdbModel = new PpdbModel();
+    const raw = await ppdbModel.findBy('id', id);
+    if (!raw) return { error: 'Pendaftaran tidak ditemukan.' };
+
+    const updated: any = {
+      ...raw,
+      ...updates
+    };
+
+    // Auto-update status jika admin menginput hasil psikotes
+    if (updates.hasil_psikotest) {
+      updated.status = updates.hasil_psikotest === 'LULUS' ? 'Menunggu Metode Pembayaran' : 'Selesai & Tidak Lanjut';
+    }
+
+    // Auto-update status jika admin membuat akun portal siswa
+    if (updates.siswa_username && updates.siswa_password) {
+      updated.status = 'Selesai';
+      
+      try {
+        const userModel = new UserModel();
+        const existing = await userModel.findByUsername(updates.siswa_username);
+        if (!existing) {
+          const id = Math.random().toString(36).substring(2, 15);
+          await userModel.create({
+            id,
+            username: updates.siswa_username,
+            password: updates.siswa_password,
+            role: 'orang_tua',
+            name: raw.nama_orang_tua || 'Wali Murid Adimas'
+          });
+          console.log(`Auto-created User account for student portal: ${updates.siswa_username}`);
+        }
+      } catch (userErr: any) {
+        console.error('Failed to auto-create user in Users sheet:', userErr.message);
+      }
+    }
+
+    await ppdbModel.updateRegistration(Number(raw._rowNum), updated);
+    revalidatePath('/dashboard');
+    revalidatePath('/ppdb');
+    return { success: true };
+  } catch (e: any) {
+    console.error('Error updatePpdbStatusByAdminAction:', e.message);
+    return { error: 'Gagal memperbarui status pendaftaran.' };
+  }
+}
+
+// Action Verifikasi Awal Pembayaran Pendaftaran (Halaman Verifikasi PPDB)
+export async function verifyPpdbPaymentAction(id: string, isApprove: boolean) {
+  const user = await getCurrentUser();
+  if (!user || (user.role !== 'admin' && user.role !== 'yayasan')) {
+    return { error: 'Anda tidak memiliki hak akses untuk tindakan ini.' };
+  }
+
+  try {
+    const ppdbModel = new PpdbModel();
+    const raw = await ppdbModel.findBy('id', id);
+    if (!raw) return { error: 'Pendaftaran tidak ditemukan.' };
+
+    const updated: any = {
+      ...raw,
+      status: isApprove ? 'Terverifikasi' : 'Selesai & Tidak Lanjut'
+    };
+
+    await ppdbModel.updateRegistration(Number(raw._rowNum), updated);
+    revalidatePath('/dashboard');
+    revalidatePath('/ppdb');
+    return { success: true };
+  } catch (e: any) {
+    console.error('Error verifyPpdbPaymentAction:', e.message);
+    return { error: 'Gagal memproses verifikasi.' };
+  }
+}
+
+// Action mengambil rincian biaya pendaftaran sekolah berdasarkan unit, tahun ajaran, dan metode bayar
+export async function getSchoolFeesAction(unit: string, ta: string, metode: 'Cash' | 'Angsuran') {
+  if (!unit || !ta || !metode) return null;
+  try {
+    const feesModel = new FeesModel();
+    await feesModel.initFeesIfEmpty();
+    const fee = await feesModel.getFee(unit, ta, metode);
+    return fee;
+  } catch (e: any) {
+    console.error('Error getSchoolFeesAction:', e.message);
+    return null;
+  }
+}
+
+// Action sinkronisasi akun portal PPDB yang sudah selesai ke dalam database Users
+export async function syncPpdbAccountsToUsersAction() {
+  try {
+    const ppdbModel = new PpdbModel();
+    const userModel = new UserModel();
+    
+    const allRegs = await ppdbModel.getAll();
+    const completedRegs = allRegs.filter(r => r.status === 'Selesai' && r.siswa_username && r.siswa_password);
+    
+    let count = 0;
+    for (const reg of completedRegs) {
+      const existing = await userModel.findByUsername(reg.siswa_username);
+      if (!existing) {
+        const id = reg.id || Math.random().toString(36).substring(2, 15);
+        await userModel.create({
+          id,
+          username: reg.siswa_username,
+          password: reg.siswa_password,
+          role: 'orang_tua',
+          name: reg.nama_orang_tua || 'Wali Murid Adimas'
+        });
+        count++;
+        console.log(`Synced student portal account: ${reg.siswa_username}`);
+      }
+    }
+    return { success: true, syncedCount: count };
+  } catch (e: any) {
+    console.error('Error syncPpdbAccountsToUsersAction:', e.message);
+    return { error: e.message };
+  }
+}

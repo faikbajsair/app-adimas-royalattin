@@ -1,0 +1,418 @@
+.container {
+  max-width: 1100px;
+  margin: 40px auto;
+  padding: 0 24px;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.title {
+  text-align: center;
+  font-size: 2.25rem;
+  font-weight: 800;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 6px;
+}
+
+.subtitle {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  margin-bottom: 32px;
+}
+
+/* Header Tabs */
+.tabsContainer {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  background-color: var(--bg-secondary);
+  padding: 8px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  margin-bottom: 40px;
+}
+
+.tabBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 10px 20px;
+  font-family: var(--font-title);
+  font-weight: 600;
+  font-size: 0.9rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.tabBtn:hover {
+  background-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.tabBtnActive {
+  background: var(--accent-gradient);
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+}
+
+/* Tab 1: Profile Styles */
+.profileLayout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 32px;
+}
+
+@media (max-width: 768px) {
+  .profileLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.unitSidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.unitSelectCard {
+  padding: 20px;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.unitSelectCard:hover {
+  border-color: var(--accent-color);
+  transform: translateY(-2px);
+}
+
+.unitSelectCardActive {
+  border-color: var(--accent-color);
+  background-color: rgba(59, 130, 246, 0.05);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
+}
+
+.unitSelectName {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.unitSelectDesc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.profileContent {
+  padding: 32px;
+}
+
+.profileTitle {
+  font-size: 1.6rem;
+  margin-bottom: 24px;
+}
+
+.badgeUnit {
+  display: inline-block;
+  padding: 4px 10px;
+  background-color: rgba(59, 130, 246, 0.1);
+  color: var(--accent-color);
+  font-weight: 700;
+  font-size: 0.75rem;
+  border-radius: 12px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.textSection {
+  margin-bottom: 24px;
+}
+
+.sectionHeading {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.textBody {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* Tab 2: PPDB Wizard */
+.wizardGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+
+@media (max-width: 768px) {
+  .wizardGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.quotaDisplay {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  text-align: center;
+}
+
+.quotaCircle {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border: 4px solid var(--border-color);
+  margin-bottom: 20px;
+}
+
+.quotaCircleActive {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
+}
+
+.quotaCircleEmpty {
+  border-color: #ef4444;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.15);
+}
+
+.quotaNumber {
+  font-size: 2.25rem;
+  font-weight: 800;
+}
+
+.quotaNumLabel {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+/* Tab 3: Formulir Pendaftaran */
+.formLockedBanner {
+  background-color: rgba(59, 130, 246, 0.05);
+  border: 1px solid var(--border-color);
+  padding: 16px 24px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.formLockedLabel {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.formLockedVal {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+/* Modals Overlay */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modalCard {
+  width: 100%;
+  max-width: 460px;
+  padding: 32px;
+  text-align: center;
+  animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.modalIcon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+}
+
+.modalTitle {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.modalDesc {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* Tab 4: Status Tracker */
+.trackerLayout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 32px;
+}
+
+@media (max-width: 850px) {
+  .trackerLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.statusStepper {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding-left: 24px;
+  border-left: 2px solid var(--border-color);
+  margin-left: 12px;
+  gap: 24px;
+}
+
+.stepNode {
+  position: relative;
+  padding-bottom: 4px;
+}
+
+.stepCircle {
+  position: absolute;
+  left: -33px;
+  top: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: var(--bg-primary);
+  border: 3px solid var(--border-color);
+  transition: var(--transition-smooth);
+}
+
+.stepCircleActive {
+  border-color: var(--accent-color);
+  background-color: var(--accent-color);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+.stepCircleCompleted {
+  border-color: #22c55e;
+  background-color: #22c55e;
+}
+
+.stepTitle {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  transition: var(--transition-smooth);
+}
+
+.stepTitleActive {
+  color: var(--accent-color);
+}
+
+.stepTitleCompleted {
+  color: #22c55e;
+}
+
+.stepTime {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.paymentChoiceGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.paymentChoiceCard {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  background-color: var(--bg-secondary);
+  transition: var(--transition-smooth);
+}
+
+.paymentChoiceCard:hover {
+  border-color: var(--accent-color);
+}
+
+.paymentChoiceTitle {
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+}
+
+.paymentChoiceDesc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.paymentInstallments {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.installmentCard {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 20px;
+  background-color: var(--bg-secondary);
+}
+
+.installmentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.installmentTitle {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.installmentDue {
+  font-size: 0.8rem;
+  color: #ef4444;
+  font-weight: 600;
+}
