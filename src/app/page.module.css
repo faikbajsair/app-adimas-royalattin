@@ -1,26 +1,45 @@
+/* page.module.css - Royal Attin Premium Landing Page Styles */
+
+.wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  background-color: var(--bg-primary);
+}
+
 .container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 24px;
+  width: 100%;
 }
 
+/* 1. Header Navigation */
 .header {
   height: 80px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   position: sticky;
   top: 0;
   z-index: 100;
   border-bottom: 1px solid var(--border-color);
-  background-color: rgba(248, 250, 252, 0.8);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  transition: var(--transition-smooth);
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all var(--transition-smooth);
 }
 
 :global(body[class*="dark"]) .header {
-  background-color: rgba(2, 6, 23, 0.8);
+  background-color: rgba(15, 23, 42, 0.85);
+}
+
+.headerContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .brand {
@@ -29,198 +48,804 @@
   gap: 12px;
 }
 
-.logo {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid var(--accent-color);
+.logoRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.logoItem {
+  height: 36px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05));
+  transition: transform 0.2s ease;
+}
+
+.logoItem:hover {
+  transform: scale(1.05);
 }
 
 .brandName {
-  font-size: 1.3rem;
+  font-family: var(--font-title);
+  font-size: 1.15rem;
   font-weight: 800;
-  background: var(--accent-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
 }
 
 .nav {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 20px;
 }
 
 .navLink {
   color: var(--text-secondary);
   text-decoration: none;
+  font-size: 0.95rem;
   font-weight: 500;
-  transition: var(--transition-smooth);
+  transition: color 0.2s ease;
 }
 
 .navLink:hover {
   color: var(--accent-color);
 }
 
+/* 2. Hero Section */
 .hero {
-  padding: 100px 0 80px 0;
+  padding: 80px 0 100px 0;
   text-align: center;
+  background: radial-gradient(circle at 50% -20%, rgba(6, 78, 59, 0.08) 0%, rgba(255, 255, 255, 0) 60%);
   position: relative;
 }
 
-.heroTagline {
-  font-size: 0.95rem;
+:global(body[class*="dark"]) .hero {
+  background: radial-gradient(circle at 50% -20%, rgba(6, 78, 59, 0.25) 0%, rgba(2, 6, 23, 0) 60%);
+}
+
+.heroLogos {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.heroLogoItem {
+  height: 52px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.08));
+}
+
+.heroBadge {
+  display: inline-block;
+  padding: 6px 16px;
+  background-color: rgba(6, 78, 59, 0.06);
+  color: #047857;
+  font-size: 0.85rem;
   font-weight: 600;
-  color: var(--accent-color);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 16px;
+  border-radius: 30px;
+  margin-bottom: 24px;
+  border: 1px solid rgba(6, 78, 59, 0.1);
+  letter-spacing: 0.02em;
+}
+
+:global(body[class*="dark"]) .heroBadge {
+  background-color: rgba(6, 78, 59, 0.2);
+  color: #34d399;
+  border-color: rgba(6, 78, 59, 0.3);
 }
 
 .heroTitle {
-  font-size: 3.5rem;
-  font-weight: 800;
-  margin-bottom: 24px;
+  font-family: var(--font-title);
+  font-size: 3rem;
+  font-weight: 850;
   line-height: 1.15;
+  color: var(--text-primary);
+  max-width: 850px;
+  margin: 0 auto 24px auto;
+  letter-spacing: -0.03em;
 }
 
 .heroSubtitle {
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   color: var(--text-secondary);
-  max-width: 650px;
-  margin: 0 auto 32px auto;
+  max-width: 700px;
+  margin: 0 auto 40px auto;
+  line-height: 1.6;
 }
 
-.portalGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 24px;
-  margin: 60px 0;
-}
-
-.portalCard {
-  padding: 32px;
+.heroActions {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  height: 100%;
-  transition: var(--transition-smooth);
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
 }
 
-.portalCard:hover {
-  transform: translateY(-5px);
-  border-color: var(--accent-color);
-  box-shadow: 0 12px 30px -10px var(--accent-glow);
-}
-
-.cardIcon {
-  font-size: 2rem;
-  margin-bottom: 20px;
-}
-
-.cardTitle {
-  font-size: 1.3rem;
-  margin-bottom: 12px;
-}
-
-.cardDesc {
-  color: var(--text-secondary);
+.btnSecondary {
+  display: inline-flex;
+  align-items: center;
+  padding: 14px 28px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  text-decoration: none;
+  font-weight: 600;
   font-size: 0.95rem;
-  margin-bottom: 24px;
-  flex-grow: 1;
+  transition: all 0.2s ease;
 }
 
+.btnSecondary:hover {
+  background-color: var(--bg-secondary);
+  border-color: var(--text-secondary);
+}
+
+/* Stats Card Row */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  max-width: 600px;
+  margin: 40px auto;
+}
+
+.statCard {
+  padding: 16px;
+  text-align: center;
+  border-radius: var(--radius-sm);
+}
+
+.statVal {
+  font-family: var(--font-title);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #047857;
+  margin-bottom: 4px;
+}
+
+:global(body[class*="dark"]) .statVal {
+  color: #34d399;
+}
+
+.statLabel {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Sections Common */
 .section {
-  padding: 80px 0;
+  padding: 100px 0;
   border-top: 1px solid var(--border-color);
 }
 
 .sectionTitle {
-  font-size: 2rem;
+  font-family: var(--font-title);
+  font-size: 2.25rem;
+  font-weight: 800;
   text-align: center;
-  margin-bottom: 48px;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
 }
 
-.infoGrid {
+.sectionSubtitle {
+  font-size: 1.05rem;
+  color: var(--text-secondary);
+  text-align: center;
+  max-width: 650px;
+  margin: 0 auto 56px auto;
+  line-height: 1.5;
+}
+
+/* 3. Tentang Sekolah (About) */
+.aboutGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.aboutCard {
+  padding: 32px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.aboutCard:hover {
+  transform: translateY(-4px);
+  border-color: #047857;
+}
+
+.aboutIcon {
+  font-size: 2.25rem;
+  margin-bottom: 20px;
+}
+
+.aboutUnitTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+}
+
+.aboutUnitDesc {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* 4. Channel Youtube Sekolah */
+.youtubeContent {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.youtubeCard {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+}
+
+.videoPlaceholder {
+  position: relative;
+  width: 100%;
+  padding-bottom: 56.25%; /* Aspect ratio 16:9 */
+  height: 0;
+  background-color: #000;
+}
+
+.videoIframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.youtubeText {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.youtubeText h4 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.youtubeText p {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+/* 5. Teknologi Pendidikan (EdTech) */
+.techGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+
+.techCard {
+  text-align: center;
+  padding: 24px;
+}
+
+.techIcon {
+  font-size: 2.5rem;
+  margin-bottom: 16px;
+  color: #047857;
+}
+
+.techCard h4 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.techCard p {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* 6. Gallery Tahfidz */
+.tahfidzGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.tahfidzCard {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+}
+
+.tahfidzImg {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.tahfidzCardBody {
+  padding: 20px;
+}
+
+.tahfidzCardBody h5 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.tahfidzCardBody p {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* 7. Newsletter */
+.newsletterSection {
+  padding: 60px 0;
+}
+
+.newsletterBox {
+  padding: 48px;
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+  border-radius: var(--radius-md);
+}
+
+.newsletterBox h3 {
+  font-family: var(--font-title);
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.newsletterBox p {
+  color: var(--text-secondary);
+  max-width: 550px;
+  margin: 0 auto 24px auto;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.newsletterForm {
+  display: flex;
+  gap: 12px;
+  max-width: 550px;
+  margin: 0 auto;
+}
+
+.newsletterInput {
+  flex-grow: 1;
+  padding: 14px 20px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.newsletterInput:focus {
+  border-color: #047857;
+}
+
+/* 8. Artikel Diniyah */
+.articlesGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.articleCard {
+  padding: 24px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  transition: transform 0.2s ease;
+}
+
+.articleCard:hover {
+  transform: translateY(-4px);
+}
+
+.articleBadge {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background-color: rgba(217, 119, 6, 0.08);
+  color: #d97706;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  letter-spacing: 0.05em;
+}
+
+.articleCard h4 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.4;
+  margin-bottom: 12px;
+}
+
+.articleCard p {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 20px;
+  flex-grow: 1;
+}
+
+.articleReadMore {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #047857;
+  cursor: pointer;
+}
+
+/* 9. Informasi Kajian */
+.kajianCard {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px;
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.kajianBadge {
+  align-self: flex-start;
+  padding: 4px 12px;
+  background-color: rgba(6, 78, 59, 0.06);
+  color: #047857;
+  font-weight: 700;
+  font-size: 0.8rem;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+.kajianCard h3 {
+  font-family: var(--font-title);
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-top: 4px;
+  line-height: 1.35;
+}
+
+.kajianDetails {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  gap: 16px 24px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  padding: 20px;
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+}
+
+/* 10. Testimoni Sekolah */
+.testimonialGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.testimonialCard {
+  padding: 28px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+}
+
+.testiText {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  font-style: italic;
+  margin-bottom: 24px;
+  flex-grow: 1;
+}
+
+.testiAuthor {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border-color);
+  padding-top: 16px;
+}
+
+.testiAuthor strong {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.testiAuthor span {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* 11. Gallery Kegiatan Siswa */
+.galleryGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.galleryItem {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  aspect-ratio: 1;
+}
+
+.galleryItem img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.galleryOverlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.7));
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 500;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+}
+
+.galleryItem:hover img {
+  transform: scale(1.08);
+}
+
+.galleryItem:hover .galleryOverlay {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 12. Question & Answer (FAQ) */
+.faqList {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.faqItem {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-primary);
+  overflow: hidden;
+}
+
+.faqQuestion {
+  padding: 20px 24px;
+  font-weight: 600;
+  font-size: 1.05rem;
+  cursor: pointer;
+  outline: none;
+  list-style: none; /* Hide default triangle on Chrome/Safari */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.faqQuestion::after {
+  content: '▼';
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  transition: transform 0.2s ease;
+}
+
+.faqItem[open] .faqQuestion::after {
+  transform: rotate(180deg);
+}
+
+.faqAnswer {
+  padding: 0 24px 20px 24px;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  border-top: 1px dashed var(--border-color);
+  margin-top: 4px;
+  padding-top: 16px;
+}
+
+/* 13. Kontak & Pendaftaran (Footer / Saran) */
+.contactGrid {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
   gap: 48px;
   align-items: start;
 }
 
-@media (max-width: 768px) {
-  .infoGrid {
-    grid-template-columns: 1fr;
-    gap: 32px;
-  }
-}
-
-.infoContent {
+.contactDetails {
   display: flex;
   flex-direction: column;
-  gap: 24px;
 }
 
-.infoItem {
+.contactDetails h4 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.contactItem {
   display: flex;
-  align-items: flex-start;
   gap: 16px;
+  margin-bottom: 24px;
+  align-items: start;
 }
 
-.infoLabel {
-  font-weight: 600;
-  font-size: 0.95rem;
+.contactIcon {
+  font-size: 1.5rem;
+}
+
+.contactItem strong {
+  display: block;
+  font-size: 0.9rem;
   margin-bottom: 4px;
 }
 
-.infoVal {
-  color: var(--text-secondary);
+.contactItem p {
+  margin: 0;
   font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
 }
 
-.mapWrapper {
-  overflow: hidden;
-  border-radius: var(--radius-md);
+.mapContainer {
+  margin-top: 16px;
   border: 1px solid var(--border-color);
-  height: 350px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 
-.mapFrame {
-  width: 100%;
-  height: 100%;
-  border: none;
-}
-
-.formCard {
-  max-width: 600px;
-  margin: 0 auto;
+.formContainer {
   padding: 40px;
 }
 
-.formStatus {
-  padding: 12px 16px;
-  border-radius: var(--radius-sm);
-  margin-bottom: 20px;
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
-.statusError {
-  background-color: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.2);
-}
-
-.statusSuccess {
-  background-color: rgba(34, 197, 94, 0.1);
-  color: #22c55e;
-  border: 1px solid rgba(34, 197, 94, 0.2);
-}
-
+/* Footer Section */
 .footer {
-  padding: 40px 0;
+  padding: 60px 0;
   text-align: center;
   border-top: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+}
+
+.footerLogos {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.footer p {
   color: var(--text-secondary);
   font-size: 0.9rem;
+  margin: 4px 0;
+}
+
+/* ========================================= */
+/* Media Queries (Responsiveness)            */
+/* ========================================= */
+
+@media (max-width: 1024px) {
+  /* Tablet Styles */
+  .heroTitle {
+    font-size: 2.5rem;
+  }
+  .aboutGrid, .techGrid, .tahfidzGrid, .articlesGrid, .testimonialGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+  .galleryGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .youtubeCard {
+    grid-template-columns: 1fr;
+  }
+  .contactGrid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Mobile Styles */
+  .headerContainer {
+    padding: 0 16px;
+  }
+  .brandName {
+    display: none; /* Sembunyikan teks nama sekolah di mobile agar tidak memakan tempat */
+  }
+  .logoRow {
+    gap: 4px;
+  }
+  .logoItem {
+    height: 32px;
+  }
+  .nav {
+    gap: 12px;
+  }
+  .navLink {
+    font-size: 0.85rem;
+  }
+  .hero {
+    padding: 60px 0 80px 0;
+  }
+  .heroTitle {
+    font-size: 2rem;
+  }
+  .heroSubtitle {
+    font-size: 1rem;
+  }
+  .heroActions {
+    flex-direction: column;
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
+    gap: 12px;
+  }
+  .heroActions a, .heroActions Link {
+    width: 100%;
+    text-align: center;
+  }
+  .statsGrid {
+    grid-template-columns: 1fr;
+    max-width: 300px;
+    gap: 12px;
+  }
+  .aboutGrid, .techGrid, .tahfidzGrid, .articlesGrid, .testimonialGrid, .galleryGrid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .newsletterBox {
+    padding: 24px;
+  }
+  .newsletterForm {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .newsletterInput {
+    width: 100%;
+  }
+  .kajianDetails {
+    grid-template-columns: 1fr;
+  }
+  .formContainer {
+    padding: 24px;
+  }
 }
