@@ -7,7 +7,7 @@ import { ChildModel } from '@/models/childModel';
 import { AttendanceModel } from '@/models/attendanceModel';
 import { TaskModel, SubmissionModel } from '@/models/taskModel';
 import { QuotaModel } from '@/models/quotaModel';
-import { LandingSectionModel, LandingSectionItemModel } from '@/models/landingModel';
+import { LandingSectionModel, LandingSectionItemModel, seedDefaultLandingData } from '@/models/landingModel';
 import { syncPpdbAccountsToUsersAction } from '@/actions/ppdbActions';
 import DashboardClient from '@/components/DashboardClient';
 
@@ -61,7 +61,7 @@ export default async function DashboardPage() {
       ]);
 
       // Ambil data dashboard secara paralel
-      const [ppdbData, eventsData, regData, quotasData, sectionsData, itemsData] = await Promise.all([
+      let [ppdbData, eventsData, regData, quotasData, sectionsData, itemsData] = await Promise.all([
         ppdbModel.getAll(),
         eventModel.getEvents(),
         registrantModel.getRegistrants(),
@@ -70,6 +70,13 @@ export default async function DashboardPage() {
         landingItemModel.getItems(),
         syncPpdbAccountsToUsersAction() // Sync dijalankan di latar belakang secara paralel
       ]);
+
+      if (sectionsData.length === 0) {
+        console.log('Landing sections kosong. Menjalankan seeding dari dashboard...');
+        await seedDefaultLandingData();
+        sectionsData = await landingSectionModel.getSections();
+        itemsData = await landingItemModel.getItems();
+      }
 
       ppdbRegistrants = ppdbData;
       events = eventsData;
