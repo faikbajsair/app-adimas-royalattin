@@ -4,6 +4,12 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { logoutAction } from '@/actions/authActions';
 import { updateSchoolInfoAction } from '@/actions/infoActions';
+import {
+  updateSectionConfigAction,
+  reorderSectionsAction,
+  saveSectionItemAction,
+  deleteSectionItemAction
+} from '@/actions/landingActions';
 import { verifyPpdbPaymentAction, updatePpdbStatusByAdminAction } from '@/actions/ppdbActions';
 import { createEventAction } from '@/actions/eventActions';
 import {
@@ -90,6 +96,8 @@ interface DashboardClientProps {
   events?: any[];
   eventRegistrants?: any[];
   quotas?: any[];
+  landingSections?: any[];
+  landingItems?: any[];
   // Props Akademik
   parentChildren?: any[];
   parentClassTasks?: any[];
@@ -108,6 +116,8 @@ export default function DashboardClient({
   events = [],
   eventRegistrants = [],
   quotas = [],
+  landingSections = [],
+  landingItems = [],
   parentChildren = [],
   parentClassTasks = [],
   parentChildAttendance = {},
@@ -118,8 +128,26 @@ export default function DashboardClient({
   todayAttendance = [],
 }: DashboardClientProps) {
   const router = useRouter();
-  const [currentSection, setCurrentSection] = useState<'main' | 'school_info' | 'ppdb' | 'events' | 'academic'>('main');
+  const [currentSection, setCurrentSection] = useState<'main' | 'school_info' | 'ppdb' | 'events' | 'academic' | 'cms_landing'>('main');
   const [academicTab, setAcademicTab] = useState<'attendance' | 'tasks'>('attendance');
+
+  // CMS Landing Page States
+  const [sections, setSections] = useState<any[]>(landingSections);
+  const [items, setItems] = useState<any[]>(landingItems);
+  const [expandedSectionId, setExpandedSectionId] = useState<string | null>(null);
+  const [cmsLoading, setCmsLoading] = useState(false);
+  const [cmsSuccess, setCmsSuccess] = useState<string | null>(null);
+  const [cmsError, setCmsError] = useState<string | null>(null);
+  const [editingItem, setEditingItem] = useState<any | null>(null);
+  const [showItemForm, setShowItemForm] = useState(false);
+
+  useEffect(() => {
+    setSections(landingSections);
+  }, [landingSections]);
+
+  useEffect(() => {
+    setItems(landingItems);
+  }, [landingItems]);
 
   // State Filter Unit PPDB & Tahun Ajaran
   const getInitialFilter = () => {
@@ -216,6 +244,186 @@ export default function DashboardClient({
       setSaveError('Gagal menyimpan perubahan.');
     } finally {
       setSaveLoading(false);
+    }
+  }
+
+  // --- CMS Landing Page Handlers ---
+  async function handleToggleSectionStatus(sectionId: string, currentStatus: string) {
+    setCmsLoading(true);
+    setCmsSuccess(null);
+    setCmsError(null);
+    const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
+    try {
+      const res = await updateSectionConfigAction(sectionId, { status: newStatus });
+      if (res.error) {
+        setCmsError(res.error);
+      } else {
+        setSections(prev => prev.map(s => s.id === sectionId ? { ...s, status: newStatus } : s));
+        setCmsSuccess(`Status section "${sectionId}" berhasil diubah.`);
+        router.refresh();
+      }
+    } catch (e: any) {
+      setCmsError('Gagal mengubah status section.');
+    } finally {
+      setCmsLoading(false);
+    }
+  }
+
+  async function handleMoveSection(index: number, direction: 'up' | 'down') {
+    const sorted = [...sections].sort((a, b) => Number(a.order_index) - Number(b.order_index));
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === sorted.length - 1) return;
+
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    const temp = sorted[index];
+    sorted[index] = sorted[targetIndex];
+    sorted[targetIndex] = temp;
+
+    const updatedOrders = sorted.map((s, i) => ({
+      id: s.id,
+      order_index: String(i + 1)
+    }));
+
+    setCmsLoading(true);
+    setCmsSuccess(null);
+    setCmsError(null);
+
+    try {
+      const res = await reorderSectionsAction(updatedOrders);
+      if (res.error) {
+        setCmsError(res.error);
+      } else {
+        setSections(prev => prev.map(s => {
+          const match = updatedOrders.find(u => u.id === s.id);
+          return match ? { ...s, order_index: match.order_index } : s;
+         }));
+        setCmsSuccess('Urutan section berhasil diperbarui.');
+        router.refresh();
+      }
+    } catch (e: any) {
+      setCmsError('Gagal memindahkan urutan.');
+    } finally {
+      setCmsLoading(false);
+    }
+  }
+
+  async function handleSaveSectionConfig(e: React.FormEvent<HTMLFormElement>, sectionId: string) {
+    e.preventDefault();
+    setCmsLoading(true);
+    setCmsSuccess(null);
+    setCmsError(null);
+
+    const formData = new FormData(e.currentTarget);
+    const title = formData.get('title') as string;
+    const subtitle = formData.get('subtitle') as string;
+
+    let extra_data = '';
+    if (sectionId === 'youtube') {
+      const video_url = formData.get('video_url') as string;
+      const cta_title = formData.get('cta_title') as string;
+      const cta_desc = formData.get('cta_desc') as string;
+      extra_data = JSON.stringify({ video_url, cta_title, cta_desc });
+    } else if (sectionId === 'kajian') {
+      const kajian_title = formData.get('kajian_title') as string;
+      const pemateri = formData.get('pemateri') as string;
+      const tanggal = formData.get('tanggal') as string;
+      const waktu = formData.get('waktu') as string;
+      const tempat = formData.get('tempat') as string;
+      extra_data = JSON.stringify({ kajian_title, pemateri, tanggal, waktu, tempat });
+    }
+
+    try {
+      const res = await updateSectionConfigAction(sectionId, { title, subtitle, extra_data });
+      if (res.error) {
+        setCmsError(res.error);
+      } else {
+        setSections(prev => prev.map(s => s.id === sectionId ? { ...s, title, subtitle, extra_data } : s));
+        setCmsSuccess(`Konfigurasi section "${sectionId}" berhasil disimpan.`);
+        setExpandedSectionId(null);
+        router.refresh();
+      }
+    } catch (e: any) {
+      setCmsError('Gagal menyimpan konfigurasi.');
+    } finally {
+      setCmsLoading(false);
+    }
+  }
+
+  async function handleSaveItem(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!editingItem) return;
+
+    setCmsLoading(true);
+    setCmsSuccess(null);
+    setCmsError(null);
+
+    const formData = new FormData(e.currentTarget);
+    const title = formData.get('title') as string;
+    const description = formData.get('description') as string;
+    const image_url = (formData.get('image_url') as string) || '';
+    const badge = (formData.get('badge') as string) || '';
+    const link_url = (formData.get('link_url') as string) || '';
+    const order_index = (formData.get('order_index') as string) || '0';
+
+    const itemId = editingItem.id || `item-${Date.now()}`;
+    const sectionId = editingItem.section_id;
+
+    try {
+      const res = await saveSectionItemAction(itemId, sectionId, {
+        title,
+        description,
+        image_url,
+        badge,
+        link_url,
+        order_index
+      });
+
+      if (res.error) {
+        setCmsError(res.error);
+      } else {
+        setItems(prev => {
+          const idx = prev.findIndex(item => item.id === itemId);
+          const newItem = { id: itemId, section_id: sectionId, title, description, image_url, badge, link_url, order_index, extra_data: '' };
+          if (idx !== -1) {
+            const copy = [...prev];
+            copy[idx] = newItem;
+            return copy;
+          } else {
+            return [...prev, newItem];
+          }
+        });
+        setCmsSuccess('Item berhasil disimpan.');
+        setShowItemForm(false);
+        setEditingItem(null);
+        router.refresh();
+      }
+    } catch (e: any) {
+      setCmsError('Gagal menyimpan item.');
+    } finally {
+      setCmsLoading(false);
+    }
+  }
+
+  async function handleDeleteItem(itemId: string) {
+    if (!confirm('Apakah Anda yakin ingin menghapus item ini?')) return;
+
+    setCmsLoading(true);
+    setCmsSuccess(null);
+    setCmsError(null);
+
+    try {
+      const res = await deleteSectionItemAction(itemId);
+      if (res.error) {
+        setCmsError(res.error);
+      } else {
+        setItems(prev => prev.filter(item => item.id !== itemId));
+        setCmsSuccess('Item berhasil dihapus.');
+        router.refresh();
+      }
+    } catch (e: any) {
+      setCmsError('Gagal menghapus item.');
+    } finally {
+      setCmsLoading(false);
     }
   }
 
@@ -531,6 +739,18 @@ export default function DashboardClient({
             </li>
           )}
 
+          {['admin', 'yayasan'].includes(user.role) && (
+            <li>
+              <button
+                onClick={() => setCurrentSection('cms_landing')}
+                className={`${styles.menuItem} ${currentSection === 'cms_landing' ? styles.menuItemActive : ''}`}
+                style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                🎨 CMS Landing Page
+              </button>
+            </li>
+          )}
+
           {['guru', 'orang_tua', 'admin'].includes(user.role) && (
             <li>
               <button
@@ -726,6 +946,355 @@ export default function DashboardClient({
                 </button>
               </div>
             </form>
+          </section>
+        )}
+
+        {/* SECTION: CMS LANDING PAGE */}
+        {currentSection === 'cms_landing' && (
+          <section className={`glass-panel ${styles.panel} animate-fade-in`}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+              <div>
+                <h2 style={{ fontSize: '1.4rem', fontWeight: 'bold', margin: 0 }}>CMS Landing Page</h2>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '4px' }}>
+                  Atur urutan, tampilkan/sembunyikan, dan edit seluruh teks & item landing page sekolah.
+                </p>
+              </div>
+            </div>
+
+            {cmsSuccess && (
+              <div className={`${styles.alert} ${styles.statusSuccess}`} style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                ✓ {cmsSuccess}
+              </div>
+            )}
+            {cmsError && (
+              <div className={`${styles.alert} ${styles.statusError}`} style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                ⚠ {cmsError}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {[...sections].sort((a, b) => Number(a.order_index) - Number(b.order_index)).map((sec, idx) => {
+                const isExpanded = expandedSectionId === sec.id;
+                const secItems = items.filter(item => item.section_id === sec.id).sort((a, b) => Number(a.order_index) - Number(b.order_index));
+                
+                // Parse extra data
+                let extra = {};
+                try {
+                  if (sec.extra_data) {
+                    extra = JSON.parse(sec.extra_data);
+                  }
+                } catch(e){}
+
+                return (
+                  <div key={sec.id} style={{ border: '1px solid var(--border-color)', borderRadius: '8px', overflow: 'hidden', backgroundColor: 'var(--bg-secondary)' }}>
+                    {/* Header Section */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', backgroundColor: 'rgba(255,255,255,0.02)', gap: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        {/* Reorder Buttons */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <button 
+                            type="button"
+                            disabled={idx === 0 || cmsLoading} 
+                            onClick={() => handleMoveSection(idx, 'up')}
+                            style={{ border: 'none', background: 'none', cursor: idx === 0 ? 'not-allowed' : 'pointer', fontSize: '0.8rem', opacity: idx === 0 ? 0.3 : 0.7 }}
+                          >
+                            ▲
+                          </button>
+                          <button 
+                            type="button"
+                            disabled={idx === sections.length - 1 || cmsLoading} 
+                            onClick={() => handleMoveSection(idx, 'down')}
+                            style={{ border: 'none', background: 'none', cursor: idx === sections.length - 1 ? 'not-allowed' : 'pointer', fontSize: '0.8rem', opacity: idx === sections.length - 1 ? 0.3 : 0.7 }}
+                          >
+                            ▼
+                          </button>
+                        </div>
+                        <div>
+                          <strong style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            {sec.name} <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: 'var(--text-secondary)' }}>({sec.id})</span>
+                          </strong>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginTop: '2px' }}>
+                            Urutan: {sec.order_index}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        {/* Toggle Status Button */}
+                        <button
+                          type="button"
+                          disabled={cmsLoading}
+                          onClick={() => handleToggleSectionStatus(sec.id, sec.status)}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '20px',
+                            border: 'none',
+                            fontSize: '0.75rem',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            backgroundColor: sec.status === 'Active' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(107, 114, 128, 0.15)',
+                            color: sec.status === 'Active' ? '#10b981' : '#9ca3af',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          ● {sec.status === 'Active' ? 'Aktif' : 'Nonaktif'}
+                        </button>
+
+                        {/* Edit Button */}
+                        <button
+                          type="button"
+                          onClick={() => setExpandedSectionId(isExpanded ? null : sec.id)}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: '4px',
+                            border: '1px solid var(--border-color)',
+                            backgroundColor: isExpanded ? 'var(--border-color)' : 'transparent',
+                            fontSize: '0.8rem',
+                            cursor: 'pointer',
+                            fontWeight: '500'
+                          }}
+                        >
+                          {isExpanded ? 'Tutup' : 'Edit Konten'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Section Body */}
+                    {isExpanded && (
+                      <div style={{ padding: '20px', borderTop: '1px solid var(--border-color)', backgroundColor: 'rgba(0,0,0,0.01)' }}>
+                        <form onSubmit={(e) => handleSaveSectionConfig(e, sec.id)}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            {/* Title & Subtitle */}
+                            {sec.id !== 'hero' && sec.id !== 'newsletter' && (
+                              <div className="form-group">
+                                <label className="form-label">Judul Section</label>
+                                <input
+                                  type="text"
+                                  name="title"
+                                  className="form-input"
+                                  defaultValue={sec.title}
+                                  placeholder={`Masukkan judul untuk ${sec.name}...`}
+                                />
+                              </div>
+                            )}
+
+                            {sec.id === 'hero' && (
+                              <div className="form-group">
+                                <label className="form-label">Slogan Hero Utama (Tagline)</label>
+                                <input
+                                  type="text"
+                                  name="title"
+                                  className="form-input"
+                                  defaultValue={sec.title}
+                                  placeholder="Tagline utama halaman..."
+                                />
+                              </div>
+                            )}
+
+                            {sec.id === 'newsletter' && (
+                              <div className="form-group">
+                                <label className="form-label">Judul Box Newsletter</label>
+                                <input
+                                  type="text"
+                                  name="title"
+                                  className="form-input"
+                                  defaultValue={sec.title}
+                                  placeholder="Judul newsletter..."
+                                />
+                              </div>
+                            )}
+
+                            <div className="form-group">
+                              <label className="form-label">
+                                {sec.id === 'hero' ? 'Deskripsi Subtitle Hero' : 'Deskripsi / Subtitle Section'}
+                              </label>
+                              <textarea
+                                name="subtitle"
+                                className="form-input"
+                                rows={3}
+                                defaultValue={sec.subtitle}
+                                placeholder="Masukkan subtitle atau paragraf penjelasan..."
+                                style={{ resize: 'vertical' }}
+                              />
+                            </div>
+
+                            {/* Section Specific */}
+                            {sec.id === 'youtube' && (
+                              <div style={{ padding: '16px', borderRadius: '6px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                <strong style={{ fontSize: '0.9rem' }}>Setting Video Youtube & CTA</strong>
+                                <div className="form-group">
+                                  <label className="form-label">YouTube Embed URL</label>
+                                  <input
+                                    type="text"
+                                    name="video_url"
+                                    className="form-input"
+                                    defaultValue={(extra as any).video_url}
+                                    placeholder="https://www.youtube.com/embed/..."
+                                  />
+                                </div>
+                                <div className="form-group">
+                                  <label className="form-label">CTA Box Title</label>
+                                  <input
+                                    type="text"
+                                    name="cta_title"
+                                    className="form-input"
+                                    defaultValue={(extra as any).cta_title}
+                                  />
+                                </div>
+                                <div className="form-group">
+                                  <label className="form-label">CTA Box Description</label>
+                                  <input
+                                    type="text"
+                                    name="cta_desc"
+                                    className="form-input"
+                                    defaultValue={(extra as any).cta_desc}
+                                  />
+                                </div>
+                              </div>
+                            )}
+
+                            {sec.id === 'kajian' && (
+                              <div style={{ padding: '16px', borderRadius: '6px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                <strong style={{ fontSize: '0.9rem' }}>Detail Agenda Kajian Bulanan</strong>
+                                <div className="form-group">
+                                  <label className="form-label">Nama Kajian / Tema</label>
+                                  <input
+                                    type="text"
+                                    name="kajian_title"
+                                    className="form-input"
+                                    defaultValue={(extra as any).kajian_title}
+                                  />
+                                </div>
+                                <div className="form-group">
+                                  <label className="form-label">Pemateri (Ustadz/Ustazah)</label>
+                                  <input
+                                    type="text"
+                                    name="pemateri"
+                                    className="form-input"
+                                    defaultValue={(extra as any).pemateri}
+                                  />
+                                </div>
+                                <div className="form-group">
+                                  <label className="form-label">Tanggal Acara</label>
+                                  <input
+                                    type="text"
+                                    name="tanggal"
+                                    className="form-input"
+                                    defaultValue={(extra as any).tanggal}
+                                    placeholder="Sabtu, 22 Agustus 2026"
+                                  />
+                                </div>
+                                <div className="form-group">
+                                  <label className="form-label">Waktu / Jam</label>
+                                  <input
+                                    type="text"
+                                    name="waktu"
+                                    className="form-input"
+                                    defaultValue={(extra as any).waktu}
+                                    placeholder="09.00 - 11.30 WIB"
+                                  />
+                                </div>
+                                <div className="form-group">
+                                  <label className="form-label">Tempat Kajian</label>
+                                  <input
+                                    type="text"
+                                    name="tempat"
+                                    className="form-input"
+                                    defaultValue={(extra as any).tempat}
+                                  />
+                                </div>
+                              </div>
+                            )}
+
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+                              <button type="submit" className="btn-primary" disabled={cmsLoading}>
+                                {cmsLoading ? 'Menyimpan...' : '✓ Simpan Teks Header'}
+                              </button>
+                            </div>
+                          </div>
+                        </form>
+
+                        {/* LIST ITEMS MANAGER */}
+                        {['hero', 'about', 'tech', 'tahfidz', 'articles', 'testimonials', 'gallery', 'faq'].includes(sec.id) && (
+                          <div style={{ marginTop: '28px', borderTop: '2px solid var(--border-color)', paddingTop: '24px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                              <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 'bold' }}>
+                                Daftar Item / Widget List
+                              </h4>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingItem({ id: '', section_id: sec.id, title: '', description: '', image_url: '', badge: '', link_url: '', order_index: String(secItems.length + 1) });
+                                  setShowItemForm(true);
+                                }}
+                                className="btn-primary"
+                                style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                              >
+                                + Tambah Item Baru
+                              </button>
+                            </div>
+
+                            {secItems.length === 0 ? (
+                              <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)', border: '1px dashed var(--border-color)', borderRadius: '6px', fontSize: '0.85rem' }}>
+                                Belum ada item di section ini. Klik tombol di atas untuk menambahkan.
+                              </div>
+                            ) : (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {secItems.map((item) => (
+                                  <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-primary)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', overflow: 'hidden' }}>
+                                      {item.image_url && (
+                                        <img 
+                                          src={item.image_url} 
+                                          alt="" 
+                                          style={{ width: '48px', height: '36px', borderRadius: '4px', objectFit: 'cover', flexShrink: 0 }} 
+                                        />
+                                      )}
+                                      {item.badge && (
+                                        <span style={{ padding: '3px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '600', backgroundColor: 'var(--accent-glow)', color: 'var(--accent-color)', flexShrink: 0 }}>
+                                          {item.badge}
+                                        </span>
+                                      )}
+                                      <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        <strong style={{ fontSize: '0.9rem', display: 'block' }}>{item.title}</strong>
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{item.description}</span>
+                                      </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginRight: '4px' }}>
+                                        #{item.order_index}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setEditingItem(item);
+                                          setShowItemForm(true);
+                                        }}
+                                        style={{ background: 'none', border: 'none', color: 'var(--accent-color)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}
+                                      >
+                                        Edit
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteItem(item.id)}
+                                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}
+                                      >
+                                        Hapus
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </section>
         )}
 
@@ -2021,6 +2590,154 @@ export default function DashboardClient({
           </div>
         )}
       </main>
+
+      {showItemForm && editingItem && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          backdropFilter: 'blur(8px)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px',
+        }}>
+          <div className="glass-panel" style={{
+            width: '100%',
+            maxWidth: '500px',
+            backgroundColor: 'var(--bg-secondary)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '12px',
+            padding: '28px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px',
+            animation: 'fade-in 0.2s ease-out'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 'bold' }}>
+                {editingItem.id ? 'Edit Item' : 'Tambah Item Baru'}
+              </h3>
+              <button 
+                type="button"
+                onClick={() => { setShowItemForm(false); setEditingItem(null); }}
+                style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--text-secondary)' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveItem} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="form-group">
+                <label className="form-label">
+                  {editingItem.section_id === 'faq' ? 'Pertanyaan' : 
+                   editingItem.section_id === 'testimonials' ? 'Nama Pengirim' : 
+                   editingItem.section_id === 'hero' ? 'Nilai Stat (e.g. 15 Kursi)' : 'Judul'}
+                </label>
+                <input
+                  type="text"
+                  name="title"
+                  className="form-input"
+                  required
+                  defaultValue={editingItem.title}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">
+                  {editingItem.section_id === 'faq' ? 'Jawaban' : 
+                   editingItem.section_id === 'testimonials' ? 'Isi Testimoni' : 
+                   editingItem.section_id === 'hero' ? 'Keterangan Stat' : 'Deskripsi'}
+                </label>
+                <textarea
+                  name="description"
+                  className="form-input"
+                  rows={4}
+                  required={editingItem.section_id !== 'gallery'}
+                  defaultValue={editingItem.description}
+                  style={{ resize: 'vertical' }}
+                />
+              </div>
+
+              {['about', 'tech', 'articles', 'testimonials'].includes(editingItem.section_id) && (
+                <div className="form-group">
+                  <label className="form-label">
+                    {editingItem.section_id === 'about' || editingItem.section_id === 'tech' ? 'Emoji / Icon (e.g. 🎨)' : 
+                     editingItem.section_id === 'articles' ? 'Kategori / Label' : 'Sub-label (e.g. Orang Tua Siswa)'}
+                  </label>
+                  <input
+                    type="text"
+                    name="badge"
+                    className="form-input"
+                    defaultValue={editingItem.badge}
+                  />
+                </div>
+              )}
+
+              {['tahfidz', 'gallery'].includes(editingItem.section_id) && (
+                <div className="form-group">
+                  <label className="form-label">URL Gambar</label>
+                  <input
+                    type="text"
+                    name="image_url"
+                    className="form-input"
+                    required
+                    defaultValue={editingItem.image_url}
+                    placeholder="https://images.unsplash.com/..."
+                  />
+                </div>
+              )}
+
+              {['about', 'articles', 'gallery'].includes(editingItem.section_id) && (
+                <div className="form-group">
+                  <label className="form-label">Link URL (Opsional)</label>
+                  <input
+                    type="text"
+                    name="link_url"
+                    className="form-input"
+                    defaultValue={editingItem.link_url}
+                  />
+                </div>
+              )}
+
+              <div className="form-group">
+                <label className="form-label">Nomor Urut (Order Index)</label>
+                <input
+                  type="number"
+                  name="order_index"
+                  className="form-input"
+                  required
+                  defaultValue={editingItem.order_index}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => { setShowItemForm(false); setEditingItem(null); }}
+                  className="btn-secondary"
+                  style={{ padding: '10px 20px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'transparent', cursor: 'pointer' }}
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={cmsLoading}
+                  style={{ padding: '10px 20px' }}
+                >
+                  {cmsLoading ? 'Menyimpan...' : 'Simpan'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { ChildModel } from '@/models/childModel';
 import { AttendanceModel } from '@/models/attendanceModel';
 import { TaskModel, SubmissionModel } from '@/models/taskModel';
 import { QuotaModel } from '@/models/quotaModel';
+import { LandingSectionModel, LandingSectionItemModel } from '@/models/landingModel';
 import { syncPpdbAccountsToUsersAction } from '@/actions/ppdbActions';
 import DashboardClient from '@/components/DashboardClient';
 
@@ -24,6 +25,8 @@ export default async function DashboardPage() {
   let events: any[] = [];
   let eventRegistrants: any[] = [];
   let quotas: any[] = [];
+  let landingSections: any[] = [];
+  let landingItems: any[] = [];
 
   // Data Akademik (Fase 3)
   let parentChildren: any[] = [];
@@ -48,6 +51,8 @@ export default async function DashboardPage() {
       const eventModel = new EventModel();
       const registrantModel = new EventRegistrantModel();
       const quotaModel = new QuotaModel();
+      const landingSectionModel = new LandingSectionModel();
+      const landingItemModel = new LandingSectionItemModel();
 
       // Jalankan inisialisasi lambat jika kosong secara paralel terlebih dahulu
       await Promise.all([
@@ -56,11 +61,13 @@ export default async function DashboardPage() {
       ]);
 
       // Ambil data dashboard secara paralel
-      const [ppdbData, eventsData, regData, quotasData] = await Promise.all([
+      const [ppdbData, eventsData, regData, quotasData, sectionsData, itemsData] = await Promise.all([
         ppdbModel.getAll(),
         eventModel.getEvents(),
         registrantModel.getRegistrants(),
         quotaModel.getAll(),
+        landingSectionModel.getSections(),
+        landingItemModel.getItems(),
         syncPpdbAccountsToUsersAction() // Sync dijalankan di latar belakang secara paralel
       ]);
 
@@ -68,6 +75,8 @@ export default async function DashboardPage() {
       events = eventsData;
       eventRegistrants = regData;
       quotas = quotasData;
+      landingSections = sectionsData;
+      landingItems = itemsData;
     }
 
     // 2. Data Orang Tua (Fase 3)
@@ -147,6 +156,8 @@ export default async function DashboardPage() {
       events={events}
       eventRegistrants={eventRegistrants}
       quotas={quotas}
+      landingSections={landingSections}
+      landingItems={landingItems}
       // Props Akademik
       parentChildren={parentChildren}
       parentClassTasks={parentClassTasks}
