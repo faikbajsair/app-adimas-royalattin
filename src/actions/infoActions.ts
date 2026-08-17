@@ -2,8 +2,10 @@
 
 import { SchoolInfoModel, SuggestionModel, SchoolInfo } from '@/models/infoModel';
 import { getCurrentUser } from './authActions';
+import { saveUploadedFile } from './ppdbActions';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
+
 
 const suggestionSchema = z.object({
   name: z.string().min(1, 'Nama harus diisi'),
@@ -47,6 +49,11 @@ export async function updateSchoolInfoAction(prevState: any, formData: FormData)
   const youtube_url = formData.get('youtube_url') as string;
   const instagram_url = formData.get('instagram_url') as string;
 
+  // File uploads
+  const brochure_kbtk_file = formData.get('brochure_kbtk_file');
+  const brochure_sd_file = formData.get('brochure_sd_file');
+  const brochure_nura_file = formData.get('brochure_nura_file');
+
   const dataToUpdate: Partial<SchoolInfo> = {};
   if (name) dataToUpdate.name = name;
   if (tagline) dataToUpdate.tagline = tagline;
@@ -57,12 +64,42 @@ export async function updateSchoolInfoAction(prevState: any, formData: FormData)
   if (instagram_url) dataToUpdate.instagram_url = instagram_url;
 
   try {
+    if (brochure_kbtk_file) {
+      const url = await saveUploadedFile(brochure_kbtk_file, 5); // Maks 5MB untuk brosur
+      if (url) dataToUpdate.brochure_kbtk = url;
+    }
+    if (brochure_sd_file) {
+      const url = await saveUploadedFile(brochure_sd_file, 5); // Maks 5MB untuk brosur
+      if (url) dataToUpdate.brochure_sd = url;
+    }
+    if (brochure_nura_file) {
+      const url = await saveUploadedFile(brochure_nura_file, 5); // Maks 5MB untuk brosur
+      if (url) dataToUpdate.brochure_nura = url;
+    }
+
     const infoModel = new SchoolInfoModel();
     await infoModel.updateInfo(dataToUpdate);
-    revalidatePath('/'); // Refresh cache halaman utama
+    
+    // Clear caches for pages that read school info
+    revalidatePath('/');
+    revalidatePath('/ppdb');
+    revalidatePath('/dashboard');
+    
     return { success: true };
   } catch (e: any) {
     console.error('Error updateSchoolInfoAction:', e.message);
-    return { error: 'Gagal mengupdate informasi sekolah.' };
+    return { error: e.message || 'Gagal mengupdate informasi sekolah.' };
+  }
+}
+
+// Action mengambil info sekolah secara publik / client-side
+export async function getSchoolInfoAction() {
+  try {
+    const infoModel = new SchoolInfoModel();
+    const info = await infoModel.getInfo();
+    return { success: true, info };
+  } catch (e: any) {
+    console.error('Error getSchoolInfoAction:', e.message);
+    return { error: 'Gagal mengambil informasi sekolah.' };
   }
 }

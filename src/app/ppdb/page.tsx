@@ -10,9 +10,12 @@ import {
   uploadQuotaPaymentProofAction,
   getSchoolFeesAction
 } from '@/actions/ppdbActions';
+import { getSchoolInfoAction } from '@/actions/infoActions';
+import { useRouter } from 'next/navigation';
 import { PPDBRegistration } from '@/models/ppdbModel';
 import { generateQRISPayload } from '@/lib/qris';
 import styles from './ppdb.module.css';
+
 
 // Data Profil Unit Sekolah Static
 const UNIT_PROFILES = [
@@ -61,11 +64,16 @@ const UNIT_PROFILES = [
 ];
 
 export default function PpdbPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'profile' | 'ppdb' | 'form' | 'status'>('profile');
   const [guideOpen, setGuideOpen] = useState(true);
 
   // State untuk Tab 1: Profil Sekolah
   const [profileSelectedUnit, setProfileSelectedUnit] = useState(UNIT_PROFILES[0]);
+
+  // State untuk School Info (Dynamic)
+  const [schoolInfo, setSchoolInfo] = useState<any>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // State untuk Tab 2: PPDB Quota Selection
   const [ppdbUnit, setPpdbUnit] = useState('KB & TK Taman Main Royal At-Tin');
@@ -107,9 +115,24 @@ export default function PpdbPage() {
     setQrisModalOpen(true);
   }
 
-  // Mengambil kuota real-time saat pilihan unit/tahun ajaran di Tab 2 berubah
+  // Fetch School Info on Mount
   useEffect(() => {
-    async function fetchQuota() {
+    const loadSchoolInfo = async () => {
+      try {
+        const res = await getSchoolInfoAction();
+        if (res.success) {
+          setSchoolInfo(res.info);
+        }
+      } catch (err) {
+        console.error('Failed to load school info:', err);
+      }
+    };
+    loadSchoolInfo();
+  }, []);
+
+  // Mengambil kuota real-time saat pilihan unit/tahun ajaran di Tab 2 berubah, tab berubah, atau refreshTrigger dipicu
+  useEffect(() => {
+    const fetchQuota = async () => {
       setQuotaLoading(true);
       try {
         const res = await getQuotaAction(ppdbUnit, ppdbYear);
@@ -119,9 +142,37 @@ export default function PpdbPage() {
       } finally {
         setQuotaLoading(false);
       }
-    }
+    };
     fetchQuota();
-  }, [ppdbUnit, ppdbYear]);
+  }, [ppdbUnit, ppdbYear, activeTab, refreshTrigger]);
+
+  // Auto-refresh data status saat pindah ke Tab Status
+  useEffect(() => {
+    if (activeTab === 'status' && searchQuery) {
+      const refreshStatus = async () => {
+        setSearchLoading(true);
+        try {
+          const res = await searchPpdbAction(searchQuery);
+          if (res.success && res.data) {
+            setSearchResults(res.data);
+            if (res.data.length > 0) {
+              if (activeReg) {
+                const updated = res.data.find(r => r.id === activeReg.id);
+                if (updated) setActiveReg(updated);
+              } else {
+                setActiveReg(res.data[0]);
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Error auto-refreshing search status:', err);
+        } finally {
+          setSearchLoading(false);
+        }
+      };
+      refreshStatus();
+    }
+  }, [activeTab]);
 
   // State untuk Biaya Sekolah Autopopulate (Spec No. 8)
   const [schoolFees, setSchoolFees] = useState<any>(null);
@@ -171,6 +222,22 @@ export default function PpdbPage() {
   // Submit Formulir PPDB
   async function handleFormSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    
+    // Validasi file di client-side
+    const fileInput = document.getElementById('bukti_bayar_file') as HTMLInputElement;
+    if (fileInput && fileInput.files && fileInput.files[0]) {
+      const file = fileInput.files[0];
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        alert('Format file tidak didukung! Hanya diperbolehkan JPG, PNG, atau PDF.');
+        return;
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        alert('Ukuran file bukti transfer terlalu besar! Maksimal diperbolehkan 2MB agar upload cepat.');
+        return;
+      }
+    }
+    
     setConfirmOpen(true);
   }
 
@@ -196,6 +263,9 @@ export default function PpdbPage() {
         setGeneratedNo(res.noPendaftaran);
         formElement.reset();
         
+        // Auto-refresh quota
+        setRefreshTrigger(prev => prev + 1);
+
         // Auto-search untuk status tracker
         setSearchQuery(res.noPendaftaran);
       }
@@ -260,9 +330,26 @@ export default function PpdbPage() {
   async function handleUploadPaymentProof(e: React.FormEvent<HTMLFormElement>, field: any) {
     e.preventDefault();
     if (!activeReg) return;
+
+    // Validasi file di client-side
+    const form = e.currentTarget;
+    const fileInput = form.querySelector('input[type="file"]') as HTMLInputElement;
+    if (fileInput && fileInput.files && fileInput.files[0]) {
+      const file = fileInput.files[0];
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        alert('Format file tidak didukung! Hanya diperbolehkan JPG, PNG, atau PDF.');
+        return;
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        alert('Ukuran file bukti transfer terlalu besar! Maksimal diperbolehkan 2MB agar upload cepat.');
+        return;
+      }
+    }
+
     setSubmittingPayment(true);
 
-    const formData = new FormData(e.currentTarget);
+    const formData = new FormData(form);
 
     try {
       const res = await uploadQuotaPaymentProofAction(activeReg.id, field, formData);
@@ -637,11 +724,6 @@ export default function PpdbPage() {
               </div>
             ) : (
               <form id="ppdb-form" onSubmit={handleFormSubmit} encType="multipart/form-data">
-                {regError && (
-                  <div className={`${styles.alert} ${styles.statusError}`}>
-                    ⚠ {regError}
-                  </div>
-                )}
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
                   <div className="form-group">
@@ -684,22 +766,35 @@ export default function PpdbPage() {
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '20px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
-                  <div className="form-group">
-                    <label className="form-label">Informasi Biaya PPDB & Formulir</label>
-                    <a
-                      href="/dummy/brosur_biaya.html"
-                      target="_blank"
-                      style={{ color: 'var(--accent-color)', fontWeight: 600, textDecoration: 'none', fontSize: '0.9rem', display: 'block', padding: '12px', border: '1px dashed var(--border-color)', borderRadius: 'var(--radius-sm)', textAlign: 'center' }}
-                    >
-                      📄 Brosur Rincian Biaya (Klik Preview)
-                    </a>
-                  </div>
+                    {(() => {
+                      let brochureUrl = "/dummy/brosur_biaya.html";
+                      if (schoolInfo) {
+                        const unitLower = (selectedRegUnit || '').toLowerCase();
+                        if (unitLower.includes('tk') || unitLower.includes('taman main')) {
+                          brochureUrl = schoolInfo.brochure_kbtk || brochureUrl;
+                        } else if (unitLower.includes('sd') || unitLower.includes('royal')) {
+                          brochureUrl = schoolInfo.brochure_sd || brochureUrl;
+                        } else if (unitLower.includes('nura')) {
+                          brochureUrl = schoolInfo.brochure_nura || brochureUrl;
+                        }
+                      }
+                      return (
+                        <a
+                          href={brochureUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: 'var(--accent-color)', fontWeight: 600, textDecoration: 'none', fontSize: '0.9rem', display: 'block', padding: '12px', border: '1px dashed var(--border-color)', borderRadius: 'var(--radius-sm)', textAlign: 'center' }}
+                        >
+                          📄 Brosur Rincian Biaya (Klik Preview)
+                        </a>
+                      );
+                    })()}
 
                   <div className="form-group">
-                    <label htmlFor="bukti_bayar_file" className="form-label">Upload Bukti Transfer Pendaftaran (Gambar / PDF)</label>
-                    <input type="file" id="bukti_bayar_file" name="bukti_bayar_file" className="form-input" required accept="image/*,application/pdf" style={{ padding: '8px' }} />
+                    <label htmlFor="bukti_bayar_file" className="form-label">Upload Bukti Transfer Pendaftaran (JPG, PNG, PDF)</label>
+                    <input type="file" id="bukti_bayar_file" name="bukti_bayar_file" className="form-input" required accept="image/jpeg,image/png,application/pdf" style={{ padding: '8px' }} />
                     <small style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>
-                      *Silakan unggah berkas bukti transfer biaya pendaftaran Rp 250.000 langsung dari galeri atau penyimpanan perangkat Anda.
+                      *Hanya format JPG, PNG, PDF dengan ukuran maksimal 2MB. Silakan unggah berkas bukti transfer biaya pendaftaran Rp 250.000 langsung dari penyimpanan perangkat Anda.
                     </small>
                   </div>
                 </div>
@@ -730,6 +825,40 @@ export default function PpdbPage() {
               </button>
               <button className="btn-primary" onClick={handleConfirmSubmit}>
                 Ya, Kirim
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 1. Loading Overlay with Buffer Spinner */}
+      {regLoading && (
+        <div className={styles.overlay} style={{ zIndex: 9999 }}>
+          <div className={`glass-panel ${styles.modalCard}`} style={{ maxWidth: '320px', padding: '24px' }}>
+            <div className={styles.spinner} style={{ margin: '0 auto 16px auto', borderTopColor: 'var(--accent-color)' }}></div>
+            <p style={{ fontWeight: 600, fontSize: '0.95rem', margin: 0 }}>Mengirim Formulir...</p>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>Mohon tunggu, sedang memproses data ke database.</p>
+          </div>
+        </div>
+      )}
+
+      {/* 2. Striking Error Alert Popup Modal (Interactive & Bright) */}
+      {regError && (
+        <div className={styles.overlay} style={{ zIndex: 9999 }}>
+          <div className={`glass-panel ${styles.modalCard}`} style={{ borderTop: '6px solid #ef4444', maxWidth: '440px', padding: '32px' }}>
+            <span className={styles.modalIcon} style={{ fontSize: '3rem', display: 'block', marginBottom: '16px' }}>⚠️</span>
+            <h3 className={styles.modalTitle} style={{ color: '#ef4444', fontSize: '1.4rem', fontWeight: 700, marginBottom: '12px' }}>Pendaftaran Gagal</h3>
+            <p className={styles.modalDesc} style={{ color: 'var(--text-primary)', fontSize: '0.9rem', marginBottom: '24px', lineHeight: '1.5' }}>
+              {regError}
+            </p>
+            <div className={styles.modalActions}>
+              <button 
+                type="button" 
+                className="btn-primary" 
+                style={{ background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', boxShadow: '0 4px 12px rgba(239, 68, 68, 0.25)', fontWeight: 'bold' }} 
+                onClick={() => setRegError(null)}
+              >
+                Coba Lagi & Perbaiki
               </button>
             </div>
           </div>
@@ -1189,8 +1318,11 @@ export default function PpdbPage() {
                     </div>
                     <form onSubmit={(e) => handleUploadPaymentProof(e, 'bukti_full_payment')} encType="multipart/form-data">
                       <div className="form-group" style={{ marginBottom: '16px' }}>
-                        <label htmlFor="fullPaymentProof" className="form-label">Upload Berkas Bukti Transfer Pelunasan</label>
-                        <input type="file" id="fullPaymentProof" name="bukti_file" className="form-input" required accept="image/*,application/pdf" style={{ padding: '8px' }} disabled={submittingPayment} />
+                        <label htmlFor="fullPaymentProof" className="form-label">Upload Berkas Bukti Transfer Pelunasan (JPG, PNG, PDF)</label>
+                        <input type="file" id="fullPaymentProof" name="bukti_file" className="form-input" required accept="image/jpeg,image/png,application/pdf" style={{ padding: '8px' }} disabled={submittingPayment} />
+                        <small style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>
+                          *Format yang didukung: JPG, PNG, PDF. Ukuran maksimal 2MB.
+                        </small>
                       </div>
                       <button type="submit" className="btn-primary" disabled={submittingPayment}>
                         {submittingPayment ? 'Mengirim...' : 'Kirim Bukti Pelunasan'}
@@ -1218,7 +1350,8 @@ export default function PpdbPage() {
                           <a href={activeReg.bukti_angsuran_1} target="_blank" style={{ fontSize: '0.85rem', color: 'var(--accent-color)', textDecoration: 'none' }}>🔗 Lihat Berkas Bayar</a>
                         ) : activeReg.status === 'Menunggu Pembayaran Angsuran 1' ? (
                           <form onSubmit={(e) => handleUploadPaymentProof(e, 'bukti_angsuran_1')} encType="multipart/form-data">
-                            <input type="file" name="bukti_file" className="form-input" required accept="image/*,application/pdf" style={{ marginBottom: '8px', fontSize: '0.85rem', padding: '6px' }} disabled={submittingPayment} />
+                            <input type="file" name="bukti_file" className="form-input" required accept="image/jpeg,image/png,application/pdf" style={{ marginBottom: '4px', fontSize: '0.85rem', padding: '6px' }} disabled={submittingPayment} />
+                            <small style={{ color: 'var(--text-secondary)', fontSize: '0.7rem', display: 'block', marginBottom: '8px' }}>*Format: JPG, PNG, PDF (Maks 2MB)</small>
                             <button type="submit" className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }} disabled={submittingPayment}>Upload</button>
                           </form>
                         ) : (
@@ -1240,7 +1373,8 @@ export default function PpdbPage() {
                           <a href={activeReg.bukti_angsuran_2} target="_blank" style={{ fontSize: '0.85rem', color: 'var(--accent-color)', textDecoration: 'none' }}>🔗 Lihat Berkas Bayar</a>
                         ) : activeReg.status === 'Menunggu Pembayaran Angsuran 2' ? (
                           <form onSubmit={(e) => handleUploadPaymentProof(e, 'bukti_angsuran_2')} encType="multipart/form-data">
-                            <input type="file" name="bukti_file" className="form-input" required accept="image/*,application/pdf" style={{ marginBottom: '8px', fontSize: '0.85rem', padding: '6px' }} disabled={submittingPayment} />
+                            <input type="file" name="bukti_file" className="form-input" required accept="image/jpeg,image/png,application/pdf" style={{ marginBottom: '4px', fontSize: '0.85rem', padding: '6px' }} disabled={submittingPayment} />
+                            <small style={{ color: 'var(--text-secondary)', fontSize: '0.7rem', display: 'block', marginBottom: '8px' }}>*Format: JPG, PNG, PDF (Maks 2MB)</small>
                             <button type="submit" className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }} disabled={submittingPayment}>Upload</button>
                           </form>
                         ) : (
@@ -1262,7 +1396,8 @@ export default function PpdbPage() {
                           <a href={activeReg.bukti_angsuran_3} target="_blank" style={{ fontSize: '0.85rem', color: 'var(--accent-color)', textDecoration: 'none' }}>🔗 Lihat Berkas Bayar</a>
                         ) : activeReg.status === 'Menunggu Pembayaran Angsuran 3' ? (
                           <form onSubmit={(e) => handleUploadPaymentProof(e, 'bukti_angsuran_3')} encType="multipart/form-data">
-                            <input type="file" name="bukti_file" className="form-input" required accept="image/*,application/pdf" style={{ marginBottom: '8px', fontSize: '0.85rem', padding: '6px' }} disabled={submittingPayment} />
+                            <input type="file" name="bukti_file" className="form-input" required accept="image/jpeg,image/png,application/pdf" style={{ marginBottom: '4px', fontSize: '0.85rem', padding: '6px' }} disabled={submittingPayment} />
+                            <small style={{ color: 'var(--text-secondary)', fontSize: '0.7rem', display: 'block', marginBottom: '8px' }}>*Format: JPG, PNG, PDF (Maks 2MB)</small>
                             <button type="submit" className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }} disabled={submittingPayment}>Upload & Konfirmasi Selesai</button>
                           </form>
                         ) : (
@@ -1413,13 +1548,13 @@ export default function PpdbPage() {
               setQrisModalOpen(false);
             }} encType="multipart/form-data">
               <div className="form-group" style={{ marginBottom: '16px', textAlign: 'left' }}>
-                <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Upload Bukti Pembayaran (Gambar / PDF)</label>
+                <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Upload Bukti Pembayaran (JPG, PNG, PDF - Maks 2MB)</label>
                 <input
                   type="file"
                   name="bukti_file"
                   className="form-input"
                   required
-                  accept="image/*,application/pdf"
+                  accept="image/jpeg,image/png,application/pdf"
                   style={{ fontSize: '0.8rem', padding: '6px 12px' }}
                 />
               </div>

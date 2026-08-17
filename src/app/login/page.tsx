@@ -9,31 +9,31 @@ import styles from './page.module.css';
 export default function LoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [showErrorPopup, setShowErrorPopup] = useState<string | null>(null);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
-    setError(null);
-    setSuccess(false);
+    setShowErrorPopup(null);
+    setShowSuccessPopup(false);
 
     const formData = new FormData(e.currentTarget);
     try {
       const res = await loginAction(null, formData);
       if (res.error) {
-        setError(res.error);
+        setShowErrorPopup(res.error);
       } else if (res.success) {
-        setSuccess(true);
+        setShowSuccessPopup(true);
         // Refresh router untuk membersihkan/memperbarui cookies state
         router.refresh();
         // Arahkan ke halaman dashboard
         setTimeout(() => {
           router.push('/dashboard');
-        }, 800);
+        }, 1500);
       }
     } catch (err) {
-      setError('Koneksi terputus. Silakan coba lagi.');
+      setShowErrorPopup('Koneksi terputus. Silakan coba lagi.');
     } finally {
       setLoading(false);
     }
@@ -57,17 +57,6 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleLogin}>
-          {error && (
-            <div className={styles.errorAlert}>
-              <span>⚠</span> {error}
-            </div>
-          )}
-          {success && (
-            <div className={styles.successAlert}>
-              ✓ Login Berhasil! Mengalihkan ke dashboard...
-            </div>
-          )}
-
           <div className="form-group">
             <label htmlFor="username" className="form-label">Username</label>
             <input
@@ -102,16 +91,60 @@ export default function LoginPage() {
             style={{ width: '100%', justifyContent: 'center', height: '48px' }}
             disabled={loading}
           >
-            {loading ? 'Memverifikasi...' : 'Masuk'}
+            Masuk
           </button>
         </form>
 
         <div className={styles.footerLinks}>
-          <Link href="/" className={styles.backLink}>
+          <Link href="/ppdb" className={styles.backLink}>
             ← Kembali ke Halaman Utama
           </Link>
         </div>
       </div>
+
+      {/* 1. Loading Overlay with Buffer Spinner */}
+      {loading && (
+        <div className={styles.loaderOverlay}>
+          <div className={styles.loaderContent}>
+            <div className={styles.spinner}></div>
+            <p style={{ fontWeight: 600, fontSize: '1rem', margin: '12px 0 0 0' }}>Memverifikasi Akun Anda...</p>
+            <p style={{ fontSize: '0.8rem', opacity: 0.8, margin: '4px 0 0 0' }}>Mohon tunggu sebentar</p>
+          </div>
+        </div>
+      )}
+
+      {/* 2. Success Alert Popup */}
+      {showSuccessPopup && (
+        <div className={styles.popupOverlay}>
+          <div className={styles.popupCard} style={{ borderTop: '6px solid #22c55e' }}>
+            <span className={styles.popupIcon}>🎉</span>
+            <h3 className={styles.popupTitle} style={{ color: '#22c55e' }}>Login Berhasil!</h3>
+            <p className={styles.popupDesc}>
+              Selamat datang kembali. Anda akan dialihkan ke Dashboard dalam beberapa saat.
+            </p>
+            <div className={styles.spinner} style={{ margin: '0 auto', width: '28px', height: '28px', borderTopColor: '#22c55e' }}></div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. Error Alert Popup */}
+      {showErrorPopup && (
+        <div className={styles.popupOverlay}>
+          <div className={styles.popupCard} style={{ borderTop: '6px solid #ef4444' }}>
+            <span className={styles.popupIcon}>⚠️</span>
+            <h3 className={styles.popupTitle} style={{ color: '#ef4444' }}>Login Gagal</h3>
+            <p className={styles.popupDesc}>{showErrorPopup}</p>
+            <button 
+              type="button" 
+              className={styles.popupButton} 
+              style={{ background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', boxShadow: '0 4px 12px rgba(239, 68, 68, 0.2)' }}
+              onClick={() => setShowErrorPopup(null)}
+            >
+              Coba Lagi
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -10,6 +10,9 @@ export interface SchoolInfo {
   instagram_url: string;
   whatsapp_admin: string;
   maps_url: string;
+  brochure_kbtk?: string;
+  brochure_sd?: string;
+  brochure_nura?: string;
 }
 
 export class SchoolInfoModel extends BaseModel {

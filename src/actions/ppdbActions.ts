@@ -9,29 +9,53 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
+import { callSheetsAPI } from '@/lib/db/googleSheets';
 
-// Helper function untuk menyimpan file upload secara lokal di public/uploads
-async function saveUploadedFile(file: any): Promise<string> {
-  if (!file || !(file instanceof File) || file.size === 0) {
+// Helper function untuk menyimpan file upload di Google Drive via Apps Script
+export async function saveUploadedFile(file: any, maxSizeMb: number = 2): Promise<string> {
+  if (!file || typeof file !== 'object' || !('size' in file) || file.size === 0) {
     return '';
   }
+
+  // 1. Validasi Ekstensi & MIME Type (JPG, PNG, PDF)
+  const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+  const fileMimeType = file.type || '';
+  const fileName = file.name || '';
+  const fileExt = fileName.split('.').pop()?.toLowerCase();
+  const allowedExts = ['jpg', 'jpeg', 'png', 'pdf'];
+
+  if (!allowedMimeTypes.includes(fileMimeType) && !allowedExts.includes(fileExt || '')) {
+    throw new Error('Format file tidak didukung. Hanya diperbolehkan format JPG, PNG, atau PDF.');
+  }
+
+  // 2. Validasi Ukuran Maksimal (2MB agar upload cepat)
+  const maxBytes = maxSizeMb * 1024 * 1024;
+  if (file.size > maxBytes) {
+    throw new Error(`Ukuran file '${fileName}' terlalu besar. Maksimal diperbolehkan ${maxSizeMb}MB agar proses upload cepat.`);
+  }
+
   try {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    const base64Data = buffer.toString('base64');
     
-    // Direktori penyimpanan di public/uploads
-    const uploadDir = join(process.cwd(), 'public', 'uploads');
-    await mkdir(uploadDir, { recursive: true });
+    // Kirim ke Google Apps Script Web App
+    const response = await callSheetsAPI('uploadFile', {
+      base64Data,
+      fileName: `${Date.now()}-${fileName.replace(/[^a-zA-Z0-9.]/g, '_')}`,
+      mimeType: fileMimeType || 'application/octet-stream'
+    });
+
+    if (response && response.success && response.url) {
+      return response.url;
+    }
     
-    // Beri nama unik menggunakan timestamp
-    const cleanFilename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-    const filePath = join(uploadDir, cleanFilename);
-    await writeFile(filePath, new Uint8Array(buffer));
-    
-    return `/uploads/${cleanFilename}`;
+    const errMsg = response && response.error ? response.error : 'Respons dari Apps Script tidak valid.';
+    console.error('Google Drive Upload Error:', errMsg);
+    throw new Error('Gagal menyimpan ke Google Drive. Pastikan Google Apps Script Anda telah diperbarui dengan kode terbaru (fitur uploadFile).');
   } catch (err: any) {
     console.error('Error saveUploadedFile:', err.message);
-    return '';
+    throw err;
   }
 }
 
@@ -74,7 +98,12 @@ export async function submitPpdbRegistrationAction(prevState: any, formData: For
   
   // Ambil file bukti bayar dari upload galeri
   const bukti_bayar_file = formData.get('bukti_bayar_file');
-  const bukti_bayar_url = await saveUploadedFile(bukti_bayar_file);
+  let bukti_bayar_url = '';
+  try {
+    bukti_bayar_url = await saveUploadedFile(bukti_bayar_file, 2); // Maks 2MB
+  } catch (err: any) {
+    return { error: err.message || 'Gagal mengunggah bukti bayar.' };
+  }
 
   const validation = ppdbSchema.safeParse({
     nama_unit,
@@ -112,6 +141,9 @@ export async function submitPpdbRegistrationAction(prevState: any, formData: For
 
     // Kurangi kuota dengan menambah kuota terisi
     await quotaModel.incrementQuota(nama_unit, tahun_ajaran);
+
+    revalidatePath('/dashboard');
+    revalidatePath('/ppdb');
 
     return { success: true, noPendaftaran };
   } catch (e: any) {
@@ -183,7 +215,12 @@ export async function uploadQuotaPaymentProofAction(
   formData: FormData
 ) {
   const file = formData.get('bukti_file');
-  const url = await saveUploadedFile(file);
+  let url = '';
+  try {
+    url = await saveUploadedFile(file, 2); // Maks 2MB
+  } catch (err: any) {
+    return { error: err.message || 'Gagal mengunggah berkas bukti transfer.' };
+  }
   
   if (!url || url.trim() === '') {
     return { error: 'Berkas file bukti transfer wajib diunggah.' };

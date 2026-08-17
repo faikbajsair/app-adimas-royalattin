@@ -27,13 +27,16 @@ export async function loginAction(prevState: any, formData: FormData) {
     try {
       user = await userModel.findByUsername(username);
     } catch (err) {
-      console.log('Sheet Users belum terinisialisasi, membuat default admin...');
+      console.log('Sheet Users belum terinisialisasi, mencoba inisialisasi...');
     }
 
     if (!user) {
-      // Jalankan inisialisasi lambat hanya jika user tidak ditemukan (database kosong/baru)
-      await userModel.initAdminIfEmpty();
-      user = await userModel.findByUsername(username);
+      // Jalankan inisialisasi lambat HANYA jika database kosong (tidak ada user sama sekali)
+      const allUsers = await userModel.getAll();
+      if (allUsers.length === 0) {
+        await userModel.initAdminIfEmpty();
+        user = await userModel.findByUsername(username);
+      }
     }
 
     if (!user) {

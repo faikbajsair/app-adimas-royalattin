@@ -11,7 +11,7 @@ import { LandingSectionModel, LandingSectionItemModel, seedDefaultLandingData } 
 import { syncPpdbAccountsToUsersAction } from '@/actions/ppdbActions';
 import DashboardClient from '@/components/DashboardClient';
 
-export const revalidate = 0; // Jangan men-cache dashboard agar data real-time terbaru
+export const dynamic = 'force-dynamic'; // Selalu render secara dinamis di server agar data real-time terbaru
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();

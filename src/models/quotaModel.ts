@@ -1,4 +1,6 @@
 import { BaseModel } from './baseModel';
+import { PpdbModel } from './ppdbModel';
+
 
 export interface QuotaConfig {
   id: string;
@@ -25,14 +27,26 @@ export class QuotaModel extends BaseModel {
            q.tahun_ajaran?.trim() === ta.trim()
     );
 
-    if (!match) {
-      // Jika belum di-config, default 50
-      return { total: 50, terisi: 0 };
+    // Hitung kuota terisi secara otomatis dari database pendaftaran PPDB
+    let terisi = 0;
+    try {
+      const ppdbModel = new PpdbModel();
+      const allRegs = (await ppdbModel.getAll()) as any[];
+      terisi = allRegs.filter(
+        r => r.nama_unit?.trim().toLowerCase() === unit.trim().toLowerCase() &&
+             r.tahun_ajaran?.trim() === ta.trim() &&
+             r.status !== 'Selesai & Tidak Lanjut'
+      ).length;
+    } catch (err) {
+      console.error('Error counting dynamic quota:', err);
+      terisi = match ? Number(match.kuota_terisi || 0) : 0;
     }
 
+    const total = match ? Number(match.kuota_total || 50) : 50;
+
     return {
-      total: Number(match.kuota_total || 0),
-      terisi: Number(match.kuota_terisi || 0)
+      total,
+      terisi
     };
   }
 

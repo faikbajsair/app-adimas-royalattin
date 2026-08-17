@@ -227,11 +227,29 @@ export default function DashboardClient({
   // Update School Info handler
   async function handleUpdateInfo(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setSaveLoading(true);
     setSaveSuccess(false);
     setSaveError(null);
 
-    const formData = new FormData(e.currentTarget);
+    // Validasi file brosur di client-side
+    const form = e.currentTarget;
+    const brochureKeys = ['brochure_kbtk_file', 'brochure_sd_file', 'brochure_nura_file'];
+    for (const key of brochureKeys) {
+      const fileInput = form.querySelector(`input[name="${key}"]`) as HTMLInputElement;
+      if (fileInput && fileInput.files && fileInput.files[0]) {
+        const file = fileInput.files[0];
+        if (file.type !== 'application/pdf') {
+          setSaveError(`Brosur ${key.split('_')[1].toUpperCase()} harus berformat PDF! Periksa kembali file yang Anda pilih.`);
+          return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          setSaveError(`Ukuran file brosur ${key.split('_')[1].toUpperCase()} terlalu besar! Maksimal diperbolehkan 5MB.`);
+          return;
+        }
+      }
+    }
+
+    setSaveLoading(true);
+    const formData = new FormData(form);
     try {
       const res = await updateSchoolInfoAction(null, formData);
       if (res.error) {
@@ -937,6 +955,60 @@ export default function DashboardClient({
                     defaultValue={info.youtube_url}
                     disabled={saveLoading}
                   />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="brochure_kbtk_file" className="form-label">Upload Brosur KB-TK (PDF)</label>
+                  <input
+                    type="file"
+                    id="brochure_kbtk_file"
+                    name="brochure_kbtk_file"
+                    className="form-input"
+                    accept="application/pdf"
+                    disabled={saveLoading}
+                    style={{ padding: '8px' }}
+                  />
+                  {info.brochure_kbtk && (
+                    <small style={{ display: 'block', marginTop: '4px' }}>
+                      Brosur Saat Ini: <a href={info.brochure_kbtk} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-color)', fontWeight: 'bold' }}>Buka Brosur PDF</a>
+                    </small>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="brochure_sd_file" className="form-label">Upload Brosur SD (PDF)</label>
+                  <input
+                    type="file"
+                    id="brochure_sd_file"
+                    name="brochure_sd_file"
+                    className="form-input"
+                    accept="application/pdf"
+                    disabled={saveLoading}
+                    style={{ padding: '8px' }}
+                  />
+                  {info.brochure_sd && (
+                    <small style={{ display: 'block', marginTop: '4px' }}>
+                      Brosur Saat Ini: <a href={info.brochure_sd} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-color)', fontWeight: 'bold' }}>Buka Brosur PDF</a>
+                    </small>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="brochure_nura_file" className="form-label">Upload Brosur NURA (PDF)</label>
+                  <input
+                    type="file"
+                    id="brochure_nura_file"
+                    name="brochure_nura_file"
+                    className="form-input"
+                    accept="application/pdf"
+                    disabled={saveLoading}
+                    style={{ padding: '8px' }}
+                  />
+                  {info.brochure_nura && (
+                    <small style={{ display: 'block', marginTop: '4px' }}>
+                      Brosur Saat Ini: <a href={info.brochure_nura} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-color)', fontWeight: 'bold' }}>Buka Brosur PDF</a>
+                    </small>
+                  )}
                 </div>
               </div>
 

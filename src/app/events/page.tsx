@@ -3,7 +3,7 @@ import { EventModel } from '@/models/eventModel';
 import EventsListClient from '@/components/EventsListClient';
 import styles from './events.module.css';
 
-export const revalidate = 30; // Revalidasi cache data event setiap 30 detik
+export const dynamic = 'force-dynamic'; // Selalu render secara dinamis di server
 
 export default async function EventsPage() {
   let events: any[] = [];
@@ -25,7 +25,7 @@ export default async function EventsPage() {
       <EventsListClient events={events} />
 
       <div style={{ textAlign: 'center', marginTop: '40px' }}>
-        <Link href="/" style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', textDecoration: 'none' }}>
+        <Link href="/ppdb" style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', textDecoration: 'none' }}>
           ← Kembali ke Halaman Utama
         </Link>
       </div>
