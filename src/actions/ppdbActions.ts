@@ -52,7 +52,7 @@ export async function saveUploadedFile(file: any, maxSizeMb: number = 2): Promis
     
     const errMsg = response && response.error ? response.error : 'Respons dari Apps Script tidak valid.';
     console.error('Google Drive Upload Error:', errMsg);
-    throw new Error('Gagal menyimpan ke Google Drive. Pastikan Google Apps Script Anda telah diperbarui dengan kode terbaru (fitur uploadFile).');
+    throw new Error(`Gagal menyimpan ke Google Drive. Detail error: ${errMsg}`);
   } catch (err: any) {
     console.error('Error saveUploadedFile:', err.message);
     throw err;
