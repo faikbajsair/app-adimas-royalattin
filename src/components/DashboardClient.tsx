@@ -131,6 +131,12 @@ export default function DashboardClient({
   const [currentSection, setCurrentSection] = useState<'main' | 'school_info' | 'ppdb' | 'events' | 'academic' | 'cms_landing'>('main');
   const [academicTab, setAcademicTab] = useState<'attendance' | 'tasks'>('attendance');
 
+  // Local Registrants State for Optimistic UI updates
+  const [localRegistrants, setLocalRegistrants] = useState<any[]>(ppdbRegistrants);
+  useEffect(() => {
+    setLocalRegistrants(ppdbRegistrants);
+  }, [ppdbRegistrants]);
+
   // CMS Landing Page States
   const [sections, setSections] = useState<any[]>(landingSections);
   const [items, setItems] = useState<any[]>(landingItems);
@@ -447,16 +453,37 @@ export default function DashboardClient({
 
   // Verifikasi Pembayaran PPDB
   async function handleVerifyPayment(id: string, isApprove: boolean) {
+    const actionText = isApprove ? 'menyetujui' : 'menolak';
+    if (!window.confirm(`Apakah Anda yakin untuk ${actionText} siswa tersebut?`)) {
+      return;
+    }
+
     setVerifyingId(id);
+
+    // Optimistic Update: langsung perbarui status lokal agar tampilan berubah < 1 detik
+    setLocalRegistrants((prev) =>
+      prev.map((reg) => {
+        if (reg.id === id) {
+          return {
+            ...reg,
+            status: isApprove ? 'Terverifikasi' : 'Selesai & Tidak Lanjut',
+          };
+        }
+        return reg;
+      })
+    );
+
     try {
       const res = await verifyPpdbPaymentAction(id, isApprove);
       if (res.error) {
         alert(res.error);
+        router.refresh();
       } else {
         router.refresh();
       }
     } catch (e) {
       alert('Gagal memperbarui verifikasi.');
+      router.refresh();
     } finally {
       setVerifyingId(null);
     }
@@ -1383,7 +1410,7 @@ export default function DashboardClient({
 
           // Hitung data untuk Laporan Quota PPDB secara dinamis
           const getUnitRegistrantCount = (unitName: string, ta: string) => {
-            return ppdbRegistrants.filter((reg: any) => {
+            return localRegistrants.filter((reg: any) => {
               const regUnit = (reg.nama_unit || '').trim().toLowerCase();
               const targetUnit = unitName.trim().toLowerCase();
               const matchesU = regUnit === targetUnit || regUnit.includes(targetUnit) || targetUnit.includes(regUnit);
@@ -1436,7 +1463,7 @@ export default function DashboardClient({
           ];
 
           // Filter registran berdasarkan otorisasi role unit dan tab filter terpilih
-          const filteredRegistrants = ppdbRegistrants.filter((reg: any) => {
+          const filteredRegistrants = localRegistrants.filter((reg: any) => {
             if (user.role === 'admin_kbtk') return matchesUnit(reg.nama_unit, 'kbtk');
             if (user.role === 'admin_sd') return matchesUnit(reg.nama_unit, 'sd');
             if (user.role === 'admin_nura') return matchesUnit(reg.nama_unit, 'nura');
@@ -1804,6 +1831,11 @@ export default function DashboardClient({
                                 color: reg.status === 'Selesai' ? '#22c55e' : reg.status === 'Selesai & Tidak Lanjut' ? '#ef4444' : '#eab308' }}>
                                 {reg.status}
                               </span>
+                              {verifyingId === reg.id && (
+                                <span style={{ marginLeft: '8px', fontSize: '0.75rem', color: '#6b7280' }}>
+                                  🔄 Menyimpan...
+                                </span>
+                              )}
                             </td>
                             <td style={{ padding: '16px 12px', textAlign: 'right' }}>
                               {/* Aksi 1: Verifikasi awal dokumen */}
