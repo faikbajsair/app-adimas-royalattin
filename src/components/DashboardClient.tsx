@@ -176,6 +176,23 @@ export default function DashboardClient({
   const [adminActionLoadingId, setAdminActionLoadingId] = useState<string | null>(null);
   const [expandedRegId, setExpandedRegId] = useState<string | null>(null);
 
+  // State untuk Custom Confirmation Dialog (Setujui / Tolak)
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    isApprove: boolean;
+    onConfirm: () => void;
+    onCancel: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    description: '',
+    isApprove: false,
+    onConfirm: () => {},
+    onCancel: () => {}
+  });
+
   // State untuk Create Event
   const [eventLoading, setEventLoading] = useState(false);
   const [eventSuccess, setEventSuccess] = useState(false);
@@ -454,10 +471,25 @@ export default function DashboardClient({
   // Verifikasi Pembayaran PPDB
   async function handleVerifyPayment(id: string, isApprove: boolean) {
     const actionText = isApprove ? 'menyetujui' : 'menolak';
-    if (!window.confirm(`Apakah Anda yakin untuk ${actionText} siswa tersebut?`)) {
-      return;
-    }
+    
+    // Buka Custom Modal Dialog bertema daripada window.confirm
+    setConfirmDialog({
+      isOpen: true,
+      title: isApprove ? 'Setujui Pendaftaran?' : 'Tolak Pendaftaran?',
+      description: `Apakah Anda yakin ingin ${actionText} pendaftaran siswa ini? Status pendaftaran siswa di database akan langsung diperbarui.`,
+      isApprove: isApprove,
+      onConfirm: async () => {
+        setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+        await executeVerification(id, isApprove);
+      },
+      onCancel: () => {
+        setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+      }
+    });
+  }
 
+  // Fungsi eksekusi verifikasi PPDB
+  async function executeVerification(id: string, isApprove: boolean) {
     setVerifyingId(id);
 
     // Optimistic Update: langsung perbarui status lokal agar tampilan berubah < 1 detik
@@ -2839,6 +2871,105 @@ export default function DashboardClient({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Confirmation Modal (Tolak/Setujui) bertema senada */}
+      {confirmDialog.isOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.4)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 9999,
+          fontFamily: 'Inter, sans-serif'
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '16px',
+            width: '420px',
+            padding: '32px 24px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            textAlign: 'center',
+            borderTop: `6px solid ${confirmDialog.isApprove ? '#22c55e' : '#ef4444'}`,
+            boxSizing: 'border-box'
+          }}>
+            <span style={{
+              fontSize: '3rem',
+              display: 'block',
+              marginBottom: '16px'
+            }}>
+              {confirmDialog.isApprove ? '✅' : '⚠️'}
+            </span>
+            <h3 style={{
+              fontSize: '1.4rem',
+              fontWeight: 700,
+              color: confirmDialog.isApprove ? '#22c55e' : '#ef4444',
+              margin: '0 0 12px 0'
+            }}>
+              {confirmDialog.title}
+            </h3>
+            <p style={{
+              fontSize: '0.9rem',
+              color: '#4b5563',
+              lineHeight: '1.5',
+              margin: '0 0 24px 0'
+            }}>
+              {confirmDialog.description}
+            </p>
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'center'
+            }}>
+              <button
+                type="button"
+                onClick={confirmDialog.onCancel}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: '1px solid #d1d5db',
+                  backgroundColor: '#ffffff',
+                  color: '#374151',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  fontSize: '0.875rem',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={confirmDialog.onConfirm}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: confirmDialog.isApprove ? '#22c55e' : '#ef4444',
+                  backgroundImage: confirmDialog.isApprove 
+                    ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' 
+                    : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                  color: '#ffffff',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  fontSize: '0.875rem',
+                  boxShadow: confirmDialog.isApprove 
+                    ? '0 4px 12px rgba(34, 197, 94, 0.2)' 
+                    : '0 4px 12px rgba(239, 68, 68, 0.2)',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                {confirmDialog.isApprove ? 'Setujui' : 'Tolak'}
+              </button>
+            </div>
           </div>
         </div>
       )}
