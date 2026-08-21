@@ -83,6 +83,54 @@ export async function sendFileToTelegram(file: any, caption: string, maxSizeMb: 
   }
 }
 
+// Helper function untuk menyimpan file upload di Google Drive via Apps Script (digunakan untuk Brosur Sekolah)
+export async function saveUploadedFile(file: any, maxSizeMb: number = 2): Promise<string> {
+  if (!file || typeof file !== 'object' || !('size' in file) || file.size === 0) {
+    return '';
+  }
+
+  // 1. Validasi Ekstensi & MIME Type (JPG, PNG, PDF)
+  const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+  const fileMimeType = file.type || '';
+  const fileName = file.name || '';
+  const fileExt = fileName.split('.').pop()?.toLowerCase();
+  const allowedExts = ['jpg', 'jpeg', 'png', 'pdf'];
+
+  if (!allowedMimeTypes.includes(fileMimeType) && !allowedExts.includes(fileExt || '')) {
+    throw new Error('Format file tidak didukung. Hanya diperbolehkan format JPG, PNG, atau PDF.');
+  }
+
+  // 2. Validasi Ukuran Maksimal
+  const maxBytes = maxSizeMb * 1024 * 1024;
+  if (file.size > maxBytes) {
+    throw new Error(`Ukuran file '${fileName}' terlalu besar. Maksimal diperbolehkan ${maxSizeMb}MB.`);
+  }
+
+  try {
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const base64Data = buffer.toString('base64');
+    
+    // Kirim ke Google Apps Script Web App
+    const response = await callSheetsAPI('uploadFile', {
+      base64Data,
+      fileName: `${Date.now()}-${fileName.replace(/[^a-zA-Z0-9.]/g, '_')}`,
+      mimeType: fileMimeType || 'application/octet-stream'
+    });
+
+    if (response && response.success && response.url) {
+      return response.url;
+    }
+    
+    const errMsg = response && response.error ? response.error : 'Respons dari Apps Script tidak valid.';
+    console.error('Google Drive Upload Error:', errMsg);
+    throw new Error(`Gagal menyimpan ke Google Drive. Detail error: ${errMsg}`);
+  } catch (err: any) {
+    console.error('Error saveUploadedFile:', err.message);
+    throw err;
+  }
+}
+
 const ppdbSchema = z.object({
   nama_unit: z.string().min(1, 'Nama unit harus dipilih'),
   tahun_ajaran: z.string().min(1, 'Tahun ajaran harus dipilih'),
