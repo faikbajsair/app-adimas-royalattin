@@ -11,10 +11,10 @@ import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { callSheetsAPI } from '@/lib/db/googleSheets';
 
-// Helper function untuk menyimpan file upload di Google Drive via Apps Script
-export async function saveUploadedFile(file: any, maxSizeMb: number = 2): Promise<string> {
+// Helper function untuk mengirim berkas bukti transfer ke Telegram Bot
+export async function sendFileToTelegram(file: any, caption: string, maxSizeMb: number = 2): Promise<boolean> {
   if (!file || typeof file !== 'object' || !('size' in file) || file.size === 0) {
-    return '';
+    return false;
   }
 
   // 1. Validasi Ekstensi & MIME Type (JPG, PNG, PDF)
@@ -28,33 +28,57 @@ export async function saveUploadedFile(file: any, maxSizeMb: number = 2): Promis
     throw new Error('Format file tidak didukung. Hanya diperbolehkan format JPG, PNG, atau PDF.');
   }
 
-  // 2. Validasi Ukuran Maksimal (2MB agar upload cepat)
+  // 2. Validasi Ukuran Maksimal
   const maxBytes = maxSizeMb * 1024 * 1024;
   if (file.size > maxBytes) {
-    throw new Error(`Ukuran file '${fileName}' terlalu besar. Maksimal diperbolehkan ${maxSizeMb}MB agar proses upload cepat.`);
+    throw new Error(`Ukuran file '${fileName}' terlalu besar. Maksimal diperbolehkan ${maxSizeMb}MB.`);
   }
 
+  const token = process.env.TELEGRAM_BOT_TOKEN || '8986475073:AAH4B-hJDwPADOFpPkYCvJ5et22kx7KubOU';
+  const chatId = process.env.TELEGRAM_CHAT_ID || '758377155';
+
   try {
+    // A. Kirim detail pendaftaran/pembayaran terlebih dahulu sebagai pesan teks
+    const msgUrl = `https://api.telegram.org/bot${token}/sendMessage`;
+    const msgRes = await fetch(msgUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: caption,
+        parse_mode: 'HTML',
+      }),
+    });
+    const msgJson = await msgRes.json();
+    if (!msgJson.ok) {
+      console.error('Telegram sendMessage failed:', msgJson.description);
+    }
+
+    // B. Kirim berkas fisik bukti transfer sebagai Document
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const base64Data = buffer.toString('base64');
-    
-    // Kirim ke Google Apps Script Web App
-    const response = await callSheetsAPI('uploadFile', {
-      base64Data,
-      fileName: `${Date.now()}-${fileName.replace(/[^a-zA-Z0-9.]/g, '_')}`,
-      mimeType: fileMimeType || 'application/octet-stream'
-    });
+    const blob = new Blob([buffer], { type: fileMimeType || 'application/octet-stream' });
 
-    if (response && response.success && response.url) {
-      return response.url;
+    const formData = new FormData();
+    formData.append('chat_id', chatId);
+    formData.append('document', blob, fileName || 'document');
+
+    const docUrl = `https://api.telegram.org/bot${token}/sendDocument`;
+    const docRes = await fetch(docUrl, {
+      method: 'POST',
+      body: formData,
+    });
+    const docJson = await docRes.json();
+    if (!docJson.ok) {
+      console.error('Telegram sendDocument failed:', docJson.description);
+      throw new Error(`Gagal mengirim file ke Telegram: ${docJson.description}`);
     }
-    
-    const errMsg = response && response.error ? response.error : 'Respons dari Apps Script tidak valid.';
-    console.error('Google Drive Upload Error:', errMsg);
-    throw new Error(`Gagal menyimpan ke Google Drive. Detail error: ${errMsg}`);
+
+    return true;
   } catch (err: any) {
-    console.error('Error saveUploadedFile:', err.message);
+    console.error('Error sendFileToTelegram:', err.message);
     throw err;
   }
 }
@@ -98,11 +122,27 @@ export async function submitPpdbRegistrationAction(prevState: any, formData: For
   
   // Ambil file bukti bayar dari upload galeri
   const bukti_bayar_file = formData.get('bukti_bayar_file');
-  let bukti_bayar_url = '';
+  
+  // Format nomor WA dan buat link WhatsApp Orang Tua untuk disimpan di database
+  const cleanWa = whatsapp.replace(/[^0-9]/g, '');
+  const waText = encodeURIComponent(`Halo, ini Admin PPDB Royal Attin. Terkait pendaftaran anak Anda: ${nama_anak}. Mohon kirimkan berkas bukti transfer pendaftarannya di sini. Terima kasih.`);
+  const bukti_bayar_url = `https://wa.me/${cleanWa}?text=${waText}`;
+
   try {
-    bukti_bayar_url = await saveUploadedFile(bukti_bayar_file, 2); // Maks 2MB
+    // Susun isi pesan notifikasi ke Telegram dengan HTML parse mode
+    const caption = `🔔 <b>PENDAFTARAN PPDB BARU</b> 🔔\n\n` +
+      `👤 <b>Nama Anak:</b> ${nama_anak}\n` +
+      `📅 <b>Tanggal Lahir:</b> ${tanggal_lahir}\n` +
+      `👥 <b>Orang Tua/Wali:</b> ${nama_orang_tua}\n` +
+      `📱 <b>WhatsApp:</b> ${whatsapp}\n` +
+      `🏫 <b>Unit Sekolah:</b> ${nama_unit}\n` +
+      `📅 <b>Tahun Ajaran:</b> ${tahun_ajaran}\n\n` +
+      `📄 <i>Bukti transfer pendaftaran terlampir di bawah ini.</i>`;
+
+    // Kirim berkas ke Telegram
+    await sendFileToTelegram(bukti_bayar_file, caption, 2);
   } catch (err: any) {
-    return { error: err.message || 'Gagal mengunggah bukti bayar.' };
+    return { error: `Gagal mengirim data bukti transfer ke Telegram. Detail: ${err.message}` };
   }
 
   const validation = ppdbSchema.safeParse({
@@ -215,14 +255,7 @@ export async function uploadQuotaPaymentProofAction(
   formData: FormData
 ) {
   const file = formData.get('bukti_file');
-  let url = '';
-  try {
-    url = await saveUploadedFile(file, 2); // Maks 2MB
-  } catch (err: any) {
-    return { error: err.message || 'Gagal mengunggah berkas bukti transfer.' };
-  }
-  
-  if (!url || url.trim() === '') {
+  if (!file || typeof file !== 'object' || !('size' in file) || file.size === 0) {
     return { error: 'Berkas file bukti transfer wajib diunggah.' };
   }
 
@@ -230,6 +263,29 @@ export async function uploadQuotaPaymentProofAction(
     const ppdbModel = new PpdbModel();
     const raw = await ppdbModel.findBy('id', id);
     if (!raw) return { error: 'Pendaftaran tidak ditemukan.' };
+
+    const whatsapp = raw.whatsapp || '';
+    const nama_anak = raw.nama_anak || 'Siswa';
+    const cleanWa = whatsapp.replace(/[^0-9]/g, '');
+    const labelPembayaran = field.replace(/_/g, ' ').toUpperCase();
+    
+    // Buat link WA orang tua sebagai bukti pembayaran untuk database
+    const waText = encodeURIComponent(`Halo, ini Admin PPDB Royal Attin. Terkait pembayaran ${labelPembayaran} an. ${nama_anak} (ID: ${id}). Mohon kirimkan berkas bukti transfernya di sini. Terima kasih.`);
+    const url = `https://wa.me/${cleanWa}?text=${waText}`;
+
+    // Susun isi pesan notifikasi ke Telegram dengan HTML parse mode
+    const caption = `💰 <b>PEMBAYARAN ANGSURAN PPDB</b> 💰\n\n` +
+      `🆔 <b>ID Pendaftaran:</b> ${id}\n` +
+      `👤 <b>Nama Anak:</b> ${nama_anak}\n` +
+      `👥 <b>Orang Tua/Wali:</b> ${raw.nama_orang_tua || '-'}\n` +
+      `📱 <b>WhatsApp:</b> ${whatsapp}\n` +
+      `💸 <b>Jenis Pembayaran:</b> ${labelPembayaran}\n` +
+      `🏫 <b>Unit Sekolah:</b> ${raw.nama_unit || '-'}\n` +
+      `📅 <b>Tahun Ajaran:</b> ${raw.tahun_ajaran || '-'}\n\n` +
+      `📄 <i>Bukti transfer pembayaran terlampir di bawah ini.</i>`;
+
+    // Kirim berkas ke Telegram
+    await sendFileToTelegram(file, caption, 2);
 
     // Update status berdasarkan tahapan pembayaran yang diunggah
     let nextStatus = raw.status;
@@ -249,7 +305,7 @@ export async function uploadQuotaPaymentProofAction(
     return { success: true };
   } catch (e: any) {
     console.error('Error uploadQuotaPaymentProofAction:', e.message);
-    return { error: 'Gagal mengirim bukti transfer.' };
+    return { error: `Gagal mengirim bukti transfer ke Telegram. Detail: ${e.message}` };
   }
 }
 
