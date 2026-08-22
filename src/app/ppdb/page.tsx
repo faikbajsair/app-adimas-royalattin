@@ -115,6 +115,28 @@ export default function PpdbPage() {
     setQrisModalOpen(true);
   }
 
+  // State & Helper untuk Custom Themed Alert
+  const [customAlert, setCustomAlert] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    type: 'success' | 'error' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    description: '',
+    type: 'info'
+  });
+
+  const showAlert = (title: string, description: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setCustomAlert({
+      isOpen: true,
+      title,
+      description,
+      type
+    });
+  };
+
   // Fetch School Info on Mount
   useEffect(() => {
     const loadSchoolInfo = async () => {
@@ -229,11 +251,11 @@ export default function PpdbPage() {
       const file = fileInput.files[0];
       const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
       if (!allowedTypes.includes(file.type)) {
-        alert('Format file tidak didukung! Hanya diperbolehkan JPG, PNG, atau PDF.');
+        showAlert('Format File Tidak Didukung', 'Hanya diperbolehkan mengunggah file JPG, PNG, atau PDF.', 'error');
         return;
       }
       if (file.size > 2 * 1024 * 1024) {
-        alert('Ukuran file bukti transfer terlalu besar! Maksimal diperbolehkan 2MB agar upload cepat.');
+        showAlert('Ukuran File Terlalu Besar', 'Maksimal ukuran berkas bukti transfer diperbolehkan adalah 2MB.', 'error');
         return;
       }
     }
@@ -311,7 +333,7 @@ export default function PpdbPage() {
     try {
       const res = await selectPaymentMethodAction(activeReg.id, metode);
       if (res.error) {
-        alert(res.error);
+        showAlert('Gagal', res.error, 'error');
       } else {
         // Refresh pencarian untuk mengambil status ter-update
         const refreshed = await searchPpdbAction(activeReg.no_pendaftaran);
@@ -320,7 +342,7 @@ export default function PpdbPage() {
         }
       }
     } catch (e) {
-      alert('Gagal memilih metode.');
+      showAlert('Error', 'Gagal memilih metode pembayaran.', 'error');
     } finally {
       setSubmittingPayment(false);
     }
@@ -338,11 +360,11 @@ export default function PpdbPage() {
       const file = fileInput.files[0];
       const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
       if (!allowedTypes.includes(file.type)) {
-        alert('Format file tidak didukung! Hanya diperbolehkan JPG, PNG, atau PDF.');
+        showAlert('Format File Tidak Didukung', 'Hanya diperbolehkan mengunggah file JPG, PNG, atau PDF.', 'error');
         return;
       }
       if (file.size > 2 * 1024 * 1024) {
-        alert('Ukuran file bukti transfer terlalu besar! Maksimal diperbolehkan 2MB agar upload cepat.');
+        showAlert('Ukuran File Terlalu Besar', 'Maksimal ukuran berkas bukti transfer diperbolehkan adalah 2MB.', 'error');
         return;
       }
     }
@@ -354,9 +376,9 @@ export default function PpdbPage() {
     try {
       const res = await uploadQuotaPaymentProofAction(activeReg.id, field, formData);
       if (res.error) {
-        alert(res.error);
+        showAlert('Gagal', res.error, 'error');
       } else {
-        alert('Bukti pembayaran berhasil diunggah!');
+        showAlert('Berhasil', 'Bukti pembayaran berhasil diunggah!', 'success');
         (e.target as HTMLFormElement).reset();
         // Refresh status
         const refreshed = await searchPpdbAction(activeReg.no_pendaftaran);
@@ -365,7 +387,7 @@ export default function PpdbPage() {
         }
       }
     } catch (e) {
-      alert('Gagal mengupload bukti pembayaran.');
+      showAlert('Error', 'Gagal mengunggah bukti pembayaran.', 'error');
     } finally {
       setSubmittingPayment(false);
     }
@@ -465,7 +487,7 @@ export default function PpdbPage() {
           className={`${styles.tabBtn} ${activeTab === 'form' ? styles.tabBtnActive : ''}`}
           onClick={() => {
             if (!selectedRegUnit) {
-              alert('Silakan pilih Unit Sekolah dan Tahun Ajaran terlebih dahulu di tab "Penerimaan Murid Baru"!');
+              showAlert('Unit Belum Dipilih', 'Silakan pilih Unit Sekolah dan Tahun Ajaran terlebih dahulu di tab "Penerimaan Murid Baru"!', 'info');
               setActiveTab('ppdb');
             } else {
               setActiveTab('form');
@@ -1309,104 +1331,175 @@ export default function PpdbPage() {
                 )}
 
                 {/* PANEL STATUS 6: PROSES PEMBAYARAN FULL PAYMENT */}
-                {activeReg.status === 'Menunggu Pembayaran Full Payment' && (
-                  <div style={{ border: '1px solid var(--border-color)', padding: '24px', borderRadius: 'var(--radius-sm)' }}>
-                    <h4 style={{ fontWeight: 700, marginBottom: '12px' }}>💳 Konfirmasi Pembayaran Full Payment</h4>
-                    <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '16px', borderRadius: 'var(--radius-sm)', marginBottom: '20px' }}>
-                      <p style={{ fontSize: '0.9rem', margin: '0 0 12px 0' }}>Batas pelunasan pembayaran:</p>
-                      <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#ef4444' }}>📅 {new Date(activeReg.tenggat_full_payment).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-                    </div>
-                    <form onSubmit={(e) => handleUploadPaymentProof(e, 'bukti_full_payment')} encType="multipart/form-data">
-                      <div className="form-group" style={{ marginBottom: '16px' }}>
-                        <label htmlFor="fullPaymentProof" className="form-label">Upload Berkas Bukti Transfer Pelunasan (JPG, PNG, PDF)</label>
-                        <input type="file" id="fullPaymentProof" name="bukti_file" className="form-input" required accept="image/jpeg,image/png,application/pdf" style={{ padding: '8px' }} disabled={submittingPayment} />
-                        <small style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>
-                          *Format yang didukung: JPG, PNG, PDF. Ukuran maksimal 2MB.
-                        </small>
+                {activeReg.status === 'Menunggu Pembayaran Full Payment' && (() => {
+                  const totalKewajiban = schoolFees ? schoolFees.total : 0;
+                  const formatCurrency = (val: number) => {
+                    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
+                  };
+
+                  return (
+                    <div style={{ border: '1px solid var(--border-color)', padding: '24px', borderRadius: 'var(--radius-sm)' }}>
+                      <h4 style={{ fontWeight: 700, marginBottom: '12px' }}>💳 Konfirmasi Pembayaran Full Payment</h4>
+                      <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '16px', borderRadius: 'var(--radius-sm)', marginBottom: '20px' }}>
+                        <p style={{ fontSize: '0.9rem', margin: '0 0 12px 0' }}>Batas pelunasan pembayaran:</p>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#ef4444', marginBottom: '12px' }}>📅 {new Date(activeReg.tenggat_full_payment).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                        <div style={{ fontSize: '0.9rem', borderTop: '1px dashed var(--border-color)', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span>Nominal Pelunasan:</span>
+                          <strong style={{ fontSize: '1.1rem', color: 'var(--accent-color)' }}>{formatCurrency(totalKewajiban)}</strong>
+                        </div>
                       </div>
-                      <button type="submit" className="btn-primary" disabled={submittingPayment}>
-                        {submittingPayment ? 'Mengirim...' : 'Kirim Bukti Pelunasan'}
+                      <button
+                        type="button"
+                        className="btn-primary"
+                        style={{ width: '100%', padding: '10px', fontSize: '0.85rem', marginBottom: '16px', backgroundImage: 'none', backgroundColor: 'var(--accent-color)' }}
+                        onClick={() => openQrisCheckout('Pelunasan Full Payment', totalKewajiban, 'bukti_full_payment')}
+                      >
+                        📱 Bayar via QRIS
                       </button>
-                    </form>
-                  </div>
-                )}
+                      <form onSubmit={(e) => handleUploadPaymentProof(e, 'bukti_full_payment')} encType="multipart/form-data">
+                        <div className="form-group" style={{ marginBottom: '16px' }}>
+                          <label htmlFor="fullPaymentProof" className="form-label">Upload Berkas Bukti Transfer Pelunasan (JPG, PNG, PDF)</label>
+                          <input type="file" id="fullPaymentProof" name="bukti_file" className="form-input" required accept="image/jpeg,image/png,application/pdf" style={{ padding: '8px' }} disabled={submittingPayment} />
+                          <small style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>
+                            *Format yang didukung: JPG, PNG, PDF. Ukuran maksimal 2MB.
+                          </small>
+                        </div>
+                        <button type="submit" className="btn-primary" disabled={submittingPayment}>
+                          {submittingPayment ? 'Mengirim...' : 'Kirim Bukti Pelunasan'}
+                        </button>
+                      </form>
+                    </div>
+                  );
+                })()}
 
                 {/* PANEL STATUS 7: PROSES PEMBAYARAN ANGSURAN (ANGSURAN 1 / 2 / 3) */}
-                {['Menunggu Pembayaran Angsuran 1', 'Menunggu Pembayaran Angsuran 2', 'Menunggu Pembayaran Angsuran 3'].includes(activeReg.status) && (
-                  <div>
-                    <h4 style={{ fontWeight: 700, marginBottom: '16px' }}>💳 Proses Upload Cicilan / Angsuran</h4>
-                    <div className={styles.paymentInstallments}>
-                      {/* Angsuran 1 */}
-                      <div className={styles.installmentCard}>
-                        <div className={styles.installmentHeader}>
-                          <div className={styles.installmentTitle}>Angsuran 1 (Uang Muka)</div>
+                {['Menunggu Pembayaran Angsuran 1', 'Menunggu Pembayaran Angsuran 2', 'Menunggu Pembayaran Angsuran 3'].includes(activeReg.status) && (() => {
+                  const totalKewajiban = schoolFees ? schoolFees.total : 0;
+                  const formatCurrency = (val: number) => {
+                    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
+                  };
+
+                  return (
+                    <div>
+                      <h4 style={{ fontWeight: 700, marginBottom: '16px' }}>💳 Proses Upload Cicilan / Angsuran</h4>
+                      <div className={styles.paymentInstallments}>
+                        {/* Angsuran 1 */}
+                        <div className={styles.installmentCard}>
+                          <div className={styles.installmentHeader}>
+                            <div className={styles.installmentTitle}>Angsuran 1 (Uang Muka)</div>
+                            {activeReg.bukti_angsuran_1 ? (
+                              <span style={{ color: '#22c55e', fontWeight: 700, fontSize: '0.85rem' }}>✓ Telah Dibayar</span>
+                            ) : (
+                              <span className={styles.installmentDue}>Tenggat: {activeReg.tenggat_angsuran_1 ? new Date(activeReg.tenggat_angsuran_1).toLocaleDateString('id-ID') : '-'}</span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: '0.85rem', margin: '4px 0 12px 0', display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)', borderBottom: '1px dashed var(--border-color)', paddingBottom: '6px' }}>
+                            <span>Nominal:</span>
+                            <strong style={{ color: 'var(--accent-color)' }}>{formatCurrency(totalKewajiban * 0.5)}</strong>
+                          </div>
                           {activeReg.bukti_angsuran_1 ? (
-                            <span style={{ color: '#22c55e', fontWeight: 700, fontSize: '0.85rem' }}>✓ Telah Dibayar</span>
+                            <a href={activeReg.bukti_angsuran_1} target="_blank" style={{ fontSize: '0.85rem', color: 'var(--accent-color)', textDecoration: 'none' }}>🔗 Lihat Berkas Bayar</a>
+                          ) : activeReg.status === 'Menunggu Pembayaran Angsuran 1' ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                              <button
+                                type="button"
+                                className="btn-primary"
+                                style={{ width: '100%', padding: '6px', fontSize: '0.8rem', backgroundImage: 'none', backgroundColor: 'var(--accent-color)' }}
+                                onClick={() => openQrisCheckout('Angsuran 1 (DP 50%)', totalKewajiban * 0.5, 'bukti_angsuran_1')}
+                              >
+                                📱 Bayar via QRIS
+                              </button>
+                              <form onSubmit={(e) => handleUploadPaymentProof(e, 'bukti_angsuran_1')} encType="multipart/form-data" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '10px' }}>
+                                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '4px' }}>Upload Bukti Pembayaran:</label>
+                                <input type="file" name="bukti_file" className="form-input" required accept="image/jpeg,image/png,application/pdf" style={{ marginBottom: '4px', fontSize: '0.85rem', padding: '6px' }} disabled={submittingPayment} />
+                                <small style={{ color: 'var(--text-secondary)', fontSize: '0.7rem', display: 'block', marginBottom: '8px' }}>*Format: JPG, PNG, PDF (Maks 2MB)</small>
+                                <button type="submit" className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem', width: '100%' }} disabled={submittingPayment}>Kirim Bukti Pembayaran</button>
+                              </form>
+                            </div>
                           ) : (
-                            <span className={styles.installmentDue}>Tenggat: {activeReg.tenggat_angsuran_1 ? new Date(activeReg.tenggat_angsuran_1).toLocaleDateString('id-ID') : '-'}</span>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Menunggu giliran</span>
                           )}
                         </div>
-                        {activeReg.bukti_angsuran_1 ? (
-                          <a href={activeReg.bukti_angsuran_1} target="_blank" style={{ fontSize: '0.85rem', color: 'var(--accent-color)', textDecoration: 'none' }}>🔗 Lihat Berkas Bayar</a>
-                        ) : activeReg.status === 'Menunggu Pembayaran Angsuran 1' ? (
-                          <form onSubmit={(e) => handleUploadPaymentProof(e, 'bukti_angsuran_1')} encType="multipart/form-data">
-                            <input type="file" name="bukti_file" className="form-input" required accept="image/jpeg,image/png,application/pdf" style={{ marginBottom: '4px', fontSize: '0.85rem', padding: '6px' }} disabled={submittingPayment} />
-                            <small style={{ color: 'var(--text-secondary)', fontSize: '0.7rem', display: 'block', marginBottom: '8px' }}>*Format: JPG, PNG, PDF (Maks 2MB)</small>
-                            <button type="submit" className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }} disabled={submittingPayment}>Upload</button>
-                          </form>
-                        ) : (
-                          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Menunggu giliran</span>
-                        )}
-                      </div>
 
-                      {/* Angsuran 2 */}
-                      <div className={styles.installmentCard}>
-                        <div className={styles.installmentHeader}>
-                          <div className={styles.installmentTitle}>Angsuran 2</div>
+                        {/* Angsuran 2 */}
+                        <div className={styles.installmentCard}>
+                          <div className={styles.installmentHeader}>
+                            <div className={styles.installmentTitle}>Angsuran 2</div>
+                            {activeReg.bukti_angsuran_2 ? (
+                              <span style={{ color: '#22c55e', fontWeight: 700, fontSize: '0.85rem' }}>✓ Telah Dibayar</span>
+                            ) : (
+                              <span className={styles.installmentDue}>Tenggat: {activeReg.tenggat_angsuran_2 ? new Date(activeReg.tenggat_angsuran_2).toLocaleDateString('id-ID') : '-'}</span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: '0.85rem', margin: '4px 0 12px 0', display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)', borderBottom: '1px dashed var(--border-color)', paddingBottom: '6px' }}>
+                            <span>Nominal:</span>
+                            <strong style={{ color: 'var(--accent-color)' }}>{formatCurrency(totalKewajiban * 0.25)}</strong>
+                          </div>
                           {activeReg.bukti_angsuran_2 ? (
-                            <span style={{ color: '#22c55e', fontWeight: 700, fontSize: '0.85rem' }}>✓ Telah Dibayar</span>
+                            <a href={activeReg.bukti_angsuran_2} target="_blank" style={{ fontSize: '0.85rem', color: 'var(--accent-color)', textDecoration: 'none' }}>🔗 Lihat Berkas Bayar</a>
+                          ) : activeReg.status === 'Menunggu Pembayaran Angsuran 2' ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                              <button
+                                type="button"
+                                className="btn-primary"
+                                style={{ width: '100%', padding: '6px', fontSize: '0.8rem', backgroundImage: 'none', backgroundColor: 'var(--accent-color)' }}
+                                onClick={() => openQrisCheckout('Angsuran 2 (Termin 25%)', totalKewajiban * 0.25, 'bukti_angsuran_2')}
+                              >
+                                📱 Bayar via QRIS
+                              </button>
+                              <form onSubmit={(e) => handleUploadPaymentProof(e, 'bukti_angsuran_2')} encType="multipart/form-data" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '10px' }}>
+                                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '4px' }}>Upload Bukti Pembayaran:</label>
+                                <input type="file" name="bukti_file" className="form-input" required accept="image/jpeg,image/png,application/pdf" style={{ marginBottom: '4px', fontSize: '0.85rem', padding: '6px' }} disabled={submittingPayment} />
+                                <small style={{ color: 'var(--text-secondary)', fontSize: '0.7rem', display: 'block', marginBottom: '8px' }}>*Format: JPG, PNG, PDF (Maks 2MB)</small>
+                                <button type="submit" className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem', width: '100%' }} disabled={submittingPayment}>Kirim Bukti Pembayaran</button>
+                              </form>
+                            </div>
                           ) : (
-                            <span className={styles.installmentDue}>Tenggat: {activeReg.tenggat_angsuran_2 ? new Date(activeReg.tenggat_angsuran_2).toLocaleDateString('id-ID') : '-'}</span>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Menunggu giliran</span>
                           )}
                         </div>
-                        {activeReg.bukti_angsuran_2 ? (
-                          <a href={activeReg.bukti_angsuran_2} target="_blank" style={{ fontSize: '0.85rem', color: 'var(--accent-color)', textDecoration: 'none' }}>🔗 Lihat Berkas Bayar</a>
-                        ) : activeReg.status === 'Menunggu Pembayaran Angsuran 2' ? (
-                          <form onSubmit={(e) => handleUploadPaymentProof(e, 'bukti_angsuran_2')} encType="multipart/form-data">
-                            <input type="file" name="bukti_file" className="form-input" required accept="image/jpeg,image/png,application/pdf" style={{ marginBottom: '4px', fontSize: '0.85rem', padding: '6px' }} disabled={submittingPayment} />
-                            <small style={{ color: 'var(--text-secondary)', fontSize: '0.7rem', display: 'block', marginBottom: '8px' }}>*Format: JPG, PNG, PDF (Maks 2MB)</small>
-                            <button type="submit" className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }} disabled={submittingPayment}>Upload</button>
-                          </form>
-                        ) : (
-                          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Menunggu giliran</span>
-                        )}
-                      </div>
 
-                      {/* Angsuran 3 */}
-                      <div className={styles.installmentCard}>
-                        <div className={styles.installmentHeader}>
-                          <div className={styles.installmentTitle}>Angsuran 3 (Pelunasan)</div>
+                        {/* Angsuran 3 */}
+                        <div className={styles.installmentCard}>
+                          <div className={styles.installmentHeader}>
+                            <div className={styles.installmentTitle}>Angsuran 3 (Pelunasan)</div>
+                            {activeReg.bukti_angsuran_3 ? (
+                              <span style={{ color: '#22c55e', fontWeight: 700, fontSize: '0.85rem' }}>✓ Telah Dibayar</span>
+                            ) : (
+                              <span className={styles.installmentDue}>Tenggat: {activeReg.tenggat_angsuran_3 ? new Date(activeReg.tenggat_angsuran_3).toLocaleDateString('id-ID') : '-'}</span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: '0.85rem', margin: '4px 0 12px 0', display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)', borderBottom: '1px dashed var(--border-color)', paddingBottom: '6px' }}>
+                            <span>Nominal:</span>
+                            <strong style={{ color: 'var(--accent-color)' }}>{formatCurrency(totalKewajiban * 0.25)}</strong>
+                          </div>
                           {activeReg.bukti_angsuran_3 ? (
-                            <span style={{ color: '#22c55e', fontWeight: 700, fontSize: '0.85rem' }}>✓ Telah Dibayar</span>
+                            <a href={activeReg.bukti_angsuran_3} target="_blank" style={{ fontSize: '0.85rem', color: 'var(--accent-color)', textDecoration: 'none' }}>🔗 Lihat Berkas Bayar</a>
+                          ) : activeReg.status === 'Menunggu Pembayaran Angsuran 3' ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                              <button
+                                type="button"
+                                className="btn-primary"
+                                style={{ width: '100%', padding: '6px', fontSize: '0.8rem', backgroundImage: 'none', backgroundColor: 'var(--accent-color)' }}
+                                onClick={() => openQrisCheckout('Angsuran 3 (Pelunasan 25%)', totalKewajiban * 0.25, 'bukti_angsuran_3')}
+                              >
+                                📱 Bayar via QRIS
+                              </button>
+                              <form onSubmit={(e) => handleUploadPaymentProof(e, 'bukti_angsuran_3')} encType="multipart/form-data" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '10px' }}>
+                                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '4px' }}>Upload Bukti Pembayaran:</label>
+                                <input type="file" name="bukti_file" className="form-input" required accept="image/jpeg,image/png,application/pdf" style={{ marginBottom: '4px', fontSize: '0.85rem', padding: '6px' }} disabled={submittingPayment} />
+                                <small style={{ color: 'var(--text-secondary)', fontSize: '0.7rem', display: 'block', marginBottom: '8px' }}>*Format: JPG, PNG, PDF (Maks 2MB)</small>
+                                <button type="submit" className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem', width: '100%' }} disabled={submittingPayment}>Kirim Bukti Pembayaran</button>
+                              </form>
+                            </div>
                           ) : (
-                            <span className={styles.installmentDue}>Tenggat: {activeReg.tenggat_angsuran_3 ? new Date(activeReg.tenggat_angsuran_3).toLocaleDateString('id-ID') : '-'}</span>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Menunggu giliran</span>
                           )}
                         </div>
-                        {activeReg.bukti_angsuran_3 ? (
-                          <a href={activeReg.bukti_angsuran_3} target="_blank" style={{ fontSize: '0.85rem', color: 'var(--accent-color)', textDecoration: 'none' }}>🔗 Lihat Berkas Bayar</a>
-                        ) : activeReg.status === 'Menunggu Pembayaran Angsuran 3' ? (
-                          <form onSubmit={(e) => handleUploadPaymentProof(e, 'bukti_angsuran_3')} encType="multipart/form-data">
-                            <input type="file" name="bukti_file" className="form-input" required accept="image/jpeg,image/png,application/pdf" style={{ marginBottom: '4px', fontSize: '0.85rem', padding: '6px' }} disabled={submittingPayment} />
-                            <small style={{ color: 'var(--text-secondary)', fontSize: '0.7rem', display: 'block', marginBottom: '8px' }}>*Format: JPG, PNG, PDF (Maks 2MB)</small>
-                            <button type="submit" className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }} disabled={submittingPayment}>Upload & Konfirmasi Selesai</button>
-                          </form>
-                        ) : (
-                          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Menunggu giliran</span>
-                        )}
                       </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* PANEL STATUS 8: MENUNGGU USERNAME & PASSWORD PORTAL SISWA */}
                 {activeReg.status === 'Menunggu Username & Password' && (
@@ -1523,7 +1616,7 @@ export default function PpdbPage() {
                   type="button"
                   onClick={() => {
                     navigator.clipboard.writeText('7071810850');
-                    alert('Nomor rekening BSI berhasil disalin!');
+                    showAlert('Salin Rekening', 'Nomor rekening BSI (7071810850) berhasil disalin.', 'success');
                   }}
                   style={{
                     backgroundColor: 'transparent',
@@ -1610,6 +1703,85 @@ export default function PpdbPage() {
       >
         <span>💬 Butuh Bantuan? Hubungi Admin</span>
       </a>
+      {/* Custom Themed Alert Modal */}
+      {customAlert.isOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.4)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 11000,
+          fontFamily: 'Inter, sans-serif'
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '16px',
+            width: '380px',
+            padding: '32px 24px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            textAlign: 'center',
+            borderTop: `6px solid ${customAlert.type === 'success' ? '#22c55e' : customAlert.type === 'error' ? '#ef4444' : '#3b82f6'}`,
+            boxSizing: 'border-box'
+          }}>
+            <span style={{
+              fontSize: '3rem',
+              display: 'block',
+              marginBottom: '16px'
+            }}>
+              {customAlert.type === 'success' ? '🎉' : customAlert.type === 'error' ? '⚠️' : 'ℹ️'}
+            </span>
+            <h3 style={{
+              fontSize: '1.25rem',
+              fontWeight: 700,
+              color: customAlert.type === 'success' ? '#22c55e' : customAlert.type === 'error' ? '#ef4444' : '#3b82f6',
+              margin: '0 0 12px 0'
+            }}>
+              {customAlert.title}
+            </h3>
+            <p style={{
+              fontSize: '0.875rem',
+              color: '#4b5563',
+              lineHeight: '1.5',
+              margin: '0 0 24px 0'
+            }}>
+              {customAlert.description}
+            </p>
+            <button
+              type="button"
+              onClick={() => setCustomAlert(prev => ({ ...prev, isOpen: false }))}
+              style={{
+                padding: '10px 24px',
+                borderRadius: '8px',
+                border: 'none',
+                backgroundColor: customAlert.type === 'success' ? '#22c55e' : customAlert.type === 'error' ? '#ef4444' : '#3b82f6',
+                backgroundImage: customAlert.type === 'success' 
+                  ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' 
+                  : customAlert.type === 'error'
+                  ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+                  : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                color: '#ffffff',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '0.875rem',
+                boxShadow: customAlert.type === 'success'
+                  ? '0 4px 12px rgba(34, 197, 94, 0.2)'
+                  : customAlert.type === 'error'
+                  ? '0 4px 12px rgba(239, 68, 68, 0.2)'
+                  : '0 4px 12px rgba(59, 130, 246, 0.2)',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              Oke
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

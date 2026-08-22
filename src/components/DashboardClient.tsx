@@ -193,6 +193,28 @@ export default function DashboardClient({
     onCancel: () => {}
   });
 
+  // State & Helper untuk Custom Themed Alert
+  const [customAlert, setCustomAlert] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    type: 'success' | 'error' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    description: '',
+    type: 'info'
+  });
+
+  const showAlert = (title: string, description: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setCustomAlert({
+      isOpen: true,
+      title,
+      description,
+      type
+    });
+  };
+
   // State untuk Create Event
   const [eventLoading, setEventLoading] = useState(false);
   const [eventSuccess, setEventSuccess] = useState(false);
@@ -508,13 +530,13 @@ export default function DashboardClient({
     try {
       const res = await verifyPpdbPaymentAction(id, isApprove);
       if (res.error) {
-        alert(res.error);
+        showAlert('Gagal', res.error, 'error');
         router.refresh();
       } else {
         router.refresh();
       }
     } catch (e) {
-      alert('Gagal memperbarui verifikasi.');
+      showAlert('Error', 'Gagal memperbarui verifikasi.', 'error');
       router.refresh();
     } finally {
       setVerifyingId(null);
@@ -571,13 +593,13 @@ export default function DashboardClient({
     try {
       const res = await updatePpdbStatusByAdminAction(id, updates);
       if (res.error) {
-        alert(res.error);
+        showAlert('Gagal', res.error, 'error');
       } else {
-        alert('Tahapan pendaftaran PPDB berhasil diperbarui!');
+        showAlert('Berhasil', 'Tahapan pendaftaran PPDB berhasil diperbarui!', 'success');
         router.refresh();
       }
     } catch (err) {
-      alert('Gagal memperbarui data.');
+      showAlert('Error', 'Gagal memperbarui data.', 'error');
     } finally {
       setAdminActionLoadingId(null);
     }
@@ -651,7 +673,7 @@ export default function DashboardClient({
       if (res.error) {
         setTaskSubError(res.error);
       } else {
-        alert('Tugas berhasil dikumpulkan!');
+        showAlert('Berhasil', 'Tugas berhasil dikumpulkan!', 'success');
         (e.target as HTMLFormElement).reset();
         router.refresh();
       }
@@ -675,13 +697,13 @@ export default function DashboardClient({
     try {
       const res = await recordStudentAttendanceAction(null, formData);
       if (res.error) {
-        alert(res.error);
+        showAlert('Gagal', res.error, 'error');
       } else {
-        alert(`Absensi untuk ${childName} berhasil disimpan.`);
+        showAlert('Berhasil', `Absensi untuk ${childName} berhasil disimpan.`, 'success');
         router.refresh();
       }
     } catch (err) {
-      alert('Koneksi database bermasalah.');
+      showAlert('Error', 'Koneksi database bermasalah.', 'error');
     } finally {
       setAttendanceLoadingId(null);
     }
@@ -723,13 +745,13 @@ export default function DashboardClient({
     try {
       const res = await gradeStudentAssignmentAction(submissionId, score, comment);
       if (res.error) {
-        alert(res.error);
+        showAlert('Gagal', res.error, 'error');
       } else {
-        alert('Nilai & masukan guru berhasil disimpan.');
+        showAlert('Berhasil', 'Nilai & masukan guru berhasil disimpan.', 'success');
         router.refresh();
       }
     } catch (err) {
-      alert('Gagal memberikan nilai.');
+      showAlert('Error', 'Gagal memberikan nilai.', 'error');
     } finally {
       setGradingSubId(null);
     }
@@ -2970,6 +2992,86 @@ export default function DashboardClient({
                 {confirmDialog.isApprove ? 'Setujui' : 'Tolak'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Themed Alert Modal */}
+      {customAlert.isOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.4)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 11000,
+          fontFamily: 'Inter, sans-serif'
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '16px',
+            width: '380px',
+            padding: '32px 24px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            textAlign: 'center',
+            borderTop: `6px solid ${customAlert.type === 'success' ? '#22c55e' : customAlert.type === 'error' ? '#ef4444' : '#3b82f6'}`,
+            boxSizing: 'border-box'
+          }}>
+            <span style={{
+              fontSize: '3rem',
+              display: 'block',
+              marginBottom: '16px'
+            }}>
+              {customAlert.type === 'success' ? '🎉' : customAlert.type === 'error' ? '⚠️' : 'ℹ️'}
+            </span>
+            <h3 style={{
+              fontSize: '1.25rem',
+              fontWeight: 700,
+              color: customAlert.type === 'success' ? '#22c55e' : customAlert.type === 'error' ? '#ef4444' : '#3b82f6',
+              margin: '0 0 12px 0'
+            }}>
+              {customAlert.title}
+            </h3>
+            <p style={{
+              fontSize: '0.875rem',
+              color: '#4b5563',
+              lineHeight: '1.5',
+              margin: '0 0 24px 0'
+            }}>
+              {customAlert.description}
+            </p>
+            <button
+              type="button"
+              onClick={() => setCustomAlert(prev => ({ ...prev, isOpen: false }))}
+              style={{
+                padding: '10px 24px',
+                borderRadius: '8px',
+                border: 'none',
+                backgroundColor: customAlert.type === 'success' ? '#22c55e' : customAlert.type === 'error' ? '#ef4444' : '#3b82f6',
+                backgroundImage: customAlert.type === 'success' 
+                  ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' 
+                  : customAlert.type === 'error'
+                  ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+                  : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                color: '#ffffff',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '0.875rem',
+                boxShadow: customAlert.type === 'success'
+                  ? '0 4px 12px rgba(34, 197, 94, 0.2)'
+                  : customAlert.type === 'error'
+                  ? '0 4px 12px rgba(239, 68, 68, 0.2)'
+                  : '0 4px 12px rgba(59, 130, 246, 0.2)',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              Oke
+            </button>
           </div>
         </div>
       )}
