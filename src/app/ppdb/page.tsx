@@ -1609,14 +1609,14 @@ export default function PpdbPage() {
                   {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(qrisAmount)}
                 </span>
               </div>
-              <div style={{ marginBottom: '4px' }}>🏦 <strong>Bank Syariah Indonesia (BSI)</strong></div>
+              <div style={{ marginBottom: '4px' }}>🏦 <strong>Bank Muamalat</strong></div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>No. Rek: <strong style={{ color: 'var(--text-primary)' }}>7071810850</strong></div>
+                <div>No. Rek: <strong style={{ color: 'var(--text-primary)' }}>3090012402</strong></div>
                 <button
                   type="button"
                   onClick={() => {
-                    navigator.clipboard.writeText('7071810850');
-                    showAlert('Salin Rekening', 'Nomor rekening BSI (7071810850) berhasil disalin.', 'success');
+                    navigator.clipboard.writeText('3090012402');
+                    showAlert('Salin Rekening', 'Nomor rekening Bank Muamalat (3090012402) berhasil disalin.', 'success');
                   }}
                   style={{
                     backgroundColor: 'transparent',
@@ -1632,7 +1632,7 @@ export default function PpdbPage() {
                   Salin
                 </button>
               </div>
-              <div style={{ marginTop: '4px' }}>A.n: <strong>Faik</strong></div>
+              <div style={{ marginTop: '4px' }}>A.n: <strong>Yayasan Taman At-Tin</strong></div>
             </div>
 
             {/* Upload Form */}

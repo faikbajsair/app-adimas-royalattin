@@ -37,9 +37,9 @@ export function generateQRISPayload(merchantName: string, merchantCity: string, 
   // Tag 01: Point of Initiation (12 = Dynamic QR dengan amount)
   payload += formatTag('01', '12');
   
-  // Tag 26: Merchant Account Information (Menggunakan Bank BSI 451 & Rekening 7071810850)
+  // Tag 26: Merchant Account Information (Menggunakan Bank Muamalat 147 & Rekening 3090012402)
   const sub00 = formatTag('00', 'ID.CO.QRIS.WWW');
-  const sub01 = formatTag('01', '936004517071810850'); // BSI kliring prefix 93600451 + No Rekening
+  const sub01 = formatTag('01', '936001473090012402'); // Bank Muamalat prefix 93600147 + No Rekening
   const sub02 = formatTag('02', 'ID1020304050607');     // NMID
   const sub03 = formatTag('03', 'UME');                 // Criteria
   payload += formatTag('26', sub00 + sub01 + sub02 + sub03);
@@ -57,7 +57,7 @@ export function generateQRISPayload(merchantName: string, merchantCity: string, 
   payload += formatTag('58', 'ID');
   
   // Tag 59: Merchant Name
-  const cleanName = "FAIK".substring(0, 25).trim().toUpperCase();
+  const cleanName = "YAYASAN TAMAN AT-TIN".substring(0, 25).trim().toUpperCase();
   payload += formatTag('59', cleanName);
   
   // Tag 60: Merchant City
