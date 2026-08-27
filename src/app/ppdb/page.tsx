@@ -16,6 +16,19 @@ import { PPDBRegistration } from '@/models/ppdbModel';
 import { generateQRISPayload } from '@/lib/qris';
 import styles from './ppdb.module.css';
 
+function getObligationFee(unit: string, metode: string): number {
+  const isSd = (unit || '').toLowerCase().includes('sd');
+  const isNura = (unit || '').toLowerCase().includes('nura');
+  const isInstallment = metode === 'Angsuran';
+  
+  if (isSd) {
+    return isInstallment ? 9800000 : 9000000;
+  } else if (isNura) {
+    return isInstallment ? 4900000 : 4500000;
+  } else {
+    return isInstallment ? 6200000 : 5700000;
+  }
+}
 
 // Data Profil Unit Sekolah Static
 const UNIT_PROFILES = [
@@ -995,14 +1008,14 @@ export default function PpdbPage() {
                 </div>
 
                 {/* DYNAMIC BIAYA & LEDGER REKAP CICILAN (Spec No. 8 & QRIS request) */}
-                {schoolFees ? (
+                {(schoolFees || (activeReg && activeReg.metode_pembayaran)) ? (
                   <div className="glass-panel animate-fade-in" style={{ padding: '24px', marginBottom: '24px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)' }}>
                     <h4 style={{ fontWeight: 700, marginBottom: '16px', fontSize: '0.95rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
                       📊 Laporan Keuangan & Buku Besar Cicilan PPDB ({activeReg.metode_pembayaran || 'Belum Pilih Metode'})
                     </h4>
                     
                     {(() => {
-                      const totalKewajiban = schoolFees.total;
+                      const totalKewajiban = schoolFees ? schoolFees.total : getObligationFee(activeReg.nama_unit || '', activeReg.metode_pembayaran || '');
                       let totalTerbayar = 0;
                       
                       if (activeReg.metode_pembayaran === 'Cash') {
@@ -1332,7 +1345,7 @@ export default function PpdbPage() {
 
                 {/* PANEL STATUS 6: PROSES PEMBAYARAN FULL PAYMENT */}
                 {activeReg.status === 'Menunggu Pembayaran Full Payment' && (() => {
-                  const totalKewajiban = schoolFees ? schoolFees.total : 0;
+                  const totalKewajiban = schoolFees ? schoolFees.total : getObligationFee(activeReg.nama_unit || '', activeReg.metode_pembayaran || '');
                   const formatCurrency = (val: number) => {
                     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
                   };
@@ -1374,7 +1387,7 @@ export default function PpdbPage() {
 
                 {/* PANEL STATUS 7: PROSES PEMBAYARAN ANGSURAN (ANGSURAN 1 / 2 / 3) */}
                 {['Menunggu Pembayaran Angsuran 1', 'Menunggu Pembayaran Angsuran 2', 'Menunggu Pembayaran Angsuran 3'].includes(activeReg.status) && (() => {
-                  const totalKewajiban = schoolFees ? schoolFees.total : 0;
+                  const totalKewajiban = schoolFees ? schoolFees.total : getObligationFee(activeReg.nama_unit || '', activeReg.metode_pembayaran || '');
                   const formatCurrency = (val: number) => {
                     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
                   };
