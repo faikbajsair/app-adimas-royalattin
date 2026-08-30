@@ -357,6 +357,24 @@ export async function uploadQuotaPaymentProofAction(
   }
 }
 
+// Helper function to check if the user role is authorized to manage registrations for a specific unit
+function isAuthorizedForPpdbUnit(userRole: string, namaUnit: string): boolean {
+  if (userRole === 'admin' || userRole === 'yayasan') {
+    return true;
+  }
+  const name = (namaUnit || '').toLowerCase();
+  if (userRole === 'admin_kbtk') {
+    return name.includes('kb') || name.includes('tk') || name.includes('taman main');
+  }
+  if (userRole === 'admin_sd') {
+    return name.includes('sd') || name.includes('at-tin islamic') || name.includes('royal at-tin');
+  }
+  if (userRole === 'admin_nura') {
+    return name === 'nura' || name.includes('nura');
+  }
+  return false;
+}
+
 // Action pembaruan status pendaftaran dari sisi Admin (Psikotes, Verifikasi, Akun Siswa)
 export async function updatePpdbStatusByAdminAction(
   id: string,
@@ -371,7 +389,7 @@ export async function updatePpdbStatusByAdminAction(
   }
 ) {
   const user = await getCurrentUser();
-  if (!user || (user.role !== 'admin' && user.role !== 'yayasan')) {
+  if (!user || !['admin', 'yayasan', 'admin_kbtk', 'admin_sd', 'admin_nura'].includes(user.role)) {
     return { error: 'Anda tidak memiliki hak akses untuk tindakan ini.' };
   }
 
@@ -379,6 +397,10 @@ export async function updatePpdbStatusByAdminAction(
     const ppdbModel = new PpdbModel();
     const raw = await ppdbModel.findBy('id', id);
     if (!raw) return { error: 'Pendaftaran tidak ditemukan.' };
+
+    if (!isAuthorizedForPpdbUnit(user.role, raw.nama_unit)) {
+      return { error: 'Anda tidak memiliki hak akses untuk tindakan ini.' };
+    }
 
     const updated: any = {
       ...raw,
@@ -426,7 +448,7 @@ export async function updatePpdbStatusByAdminAction(
 // Action Verifikasi Awal Pembayaran Pendaftaran (Halaman Verifikasi PPDB)
 export async function verifyPpdbPaymentAction(id: string, isApprove: boolean) {
   const user = await getCurrentUser();
-  if (!user || (user.role !== 'admin' && user.role !== 'yayasan')) {
+  if (!user || !['admin', 'yayasan', 'admin_kbtk', 'admin_sd', 'admin_nura'].includes(user.role)) {
     return { error: 'Anda tidak memiliki hak akses untuk tindakan ini.' };
   }
 
@@ -434,6 +456,10 @@ export async function verifyPpdbPaymentAction(id: string, isApprove: boolean) {
     const ppdbModel = new PpdbModel();
     const raw = await ppdbModel.findBy('id', id);
     if (!raw) return { error: 'Pendaftaran tidak ditemukan.' };
+
+    if (!isAuthorizedForPpdbUnit(user.role, raw.nama_unit)) {
+      return { error: 'Anda tidak memiliki hak akses untuk tindakan ini.' };
+    }
 
     const updated: any = {
       ...raw,
