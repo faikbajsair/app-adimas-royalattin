@@ -263,7 +263,7 @@ export async function submitPpdbRegistrationAction(prevState: any, formData: For
           </p>
           
           <div style="text-align: center; margin-bottom: 25px;">
-            <a href="https://royalattin.sch.id/dashboard" style="background-color: #3b82f6; color: #ffffff; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 6px; display: inline-block; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <a href="https://portal.royalattin.sch.id/login" style="background-color: #3b82f6; color: #ffffff; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 6px; display: inline-block; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
               Masuk ke Portal Dashboard
             </a>
           </div>
