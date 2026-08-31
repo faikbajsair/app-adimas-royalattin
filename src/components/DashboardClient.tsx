@@ -814,17 +814,58 @@ export default function DashboardClient({
             </li>
           )}
 
-          {['admin', 'admin_kbtk', 'admin_sd', 'admin_nura', 'yayasan'].includes(user.role) && (
-            <li>
-              <button
-                onClick={() => setCurrentSection('ppdb')}
-                className={`${styles.menuItem} ${currentSection === 'ppdb' ? styles.menuItemActive : ''}`}
-                style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer' }}
-              >
-                👥 Pendaftaran PPDB
-              </button>
-            </li>
-          )}
+          {['admin', 'admin_kbtk', 'admin_sd', 'admin_nura', 'yayasan'].includes(user.role) && (() => {
+            const matchesUnit = (namaUnit: string, targetId: 'kbtk' | 'sd' | 'nura') => {
+              const name = (namaUnit || '').toLowerCase();
+              if (targetId === 'kbtk') return name.includes('kb') || name.includes('tk') || name.includes('taman main');
+              if (targetId === 'sd') return name.includes('sd') || name.includes('at-tin islamic') || name.includes('royal at-tin');
+              if (targetId === 'nura') return name === 'nura' || name.includes('nura');
+              return false;
+            };
+            const unverifiedCount = localRegistrants.filter((reg: any) => {
+              if (reg.status !== 'Menunggu Verifikasi') return false;
+              if (user.role === 'admin_kbtk') return matchesUnit(reg.nama_unit, 'kbtk');
+              if (user.role === 'admin_sd') return matchesUnit(reg.nama_unit, 'sd');
+              if (user.role === 'admin_nura') return matchesUnit(reg.nama_unit, 'nura');
+              return true;
+            }).length;
+
+            return (
+              <li>
+                <button
+                  onClick={() => setCurrentSection('ppdb')}
+                  className={`${styles.menuItem} ${currentSection === 'ppdb' ? styles.menuItemActive : ''}`}
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  <span>👥 Pendaftaran PPDB</span>
+                  {unverifiedCount > 0 && (
+                    <span style={{
+                      backgroundColor: '#ef4444',
+                      color: 'white',
+                      borderRadius: '12px',
+                      padding: '2px 8px',
+                      fontSize: '0.75rem',
+                      fontWeight: 'bold',
+                      minWidth: '20px',
+                      textAlign: 'center',
+                      lineHeight: '1.2'
+                    }}>
+                      {unverifiedCount}
+                    </span>
+                  )}
+                </button>
+              </li>
+            );
+          })()}
 
           {['admin', 'yayasan'].includes(user.role) && (
             <li>
@@ -887,6 +928,80 @@ export default function DashboardClient({
                 <p className={styles.welcomeSubtitle}>Selamat datang di dashboard portal akademik KB-TK Royal Attin.</p>
               </div>
             </div>
+ 
+            {/* New PPDB Notifications widget */}
+            {['admin', 'admin_kbtk', 'admin_sd', 'admin_nura', 'yayasan'].includes(user.role) && (() => {
+              const matchesUnit = (namaUnit: string, targetId: 'kbtk' | 'sd' | 'nura') => {
+                const name = (namaUnit || '').toLowerCase();
+                if (targetId === 'kbtk') return name.includes('kb') || name.includes('tk') || name.includes('taman main');
+                if (targetId === 'sd') return name.includes('sd') || name.includes('at-tin islamic') || name.includes('royal at-tin');
+                if (targetId === 'nura') return name === 'nura' || name.includes('nura');
+                return false;
+              };
+
+              const newRegs = localRegistrants.filter((reg: any) => {
+                if (reg.status !== 'Menunggu Verifikasi') return false;
+                if (user.role === 'admin_kbtk') return matchesUnit(reg.nama_unit, 'kbtk');
+                if (user.role === 'admin_sd') return matchesUnit(reg.nama_unit, 'sd');
+                if (user.role === 'admin_nura') return matchesUnit(reg.nama_unit, 'nura');
+                return true;
+              });
+
+              if (newRegs.length === 0) return null;
+
+              return (
+                <section className={`glass-panel ${styles.panel}`} style={{ borderColor: 'rgba(239, 68, 68, 0.3)', background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(31, 41, 55, 0.4) 100%)', marginBottom: '24px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                    <span style={{ fontSize: '1.5rem' }}>🔔</span>
+                    <div>
+                      <h2 className={styles.panelTitle} style={{ margin: 0, color: '#f87171' }}>Pemberitahuan Pendaftaran Baru (PPDB)</h2>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: '4px 0 0 0' }}>
+                        Ada {newRegs.length} calon siswa baru yang mendaftar dan menunggu verifikasi Anda.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '300px', overflowY: 'auto', paddingRight: '4px' }}>
+                    {newRegs.map((reg) => (
+                      <div key={reg.id} style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '12px 16px',
+                        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                        borderRadius: 'var(--radius-sm)',
+                        border: '1px solid var(--border-color)',
+                        flexWrap: 'wrap',
+                        gap: '12px'
+                      }}>
+                        <div>
+                          <strong style={{ fontSize: '0.95rem', display: 'block', color: 'var(--text-primary)' }}>{reg.nama_anak}</strong>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginTop: '2px' }}>
+                            🏫 {reg.nama_unit} ({reg.tahun_ajaran}) | 👤 Orang Tua: {reg.nama_orang_tua}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          style={{
+                            padding: '6px 14px',
+                            fontSize: '0.8rem',
+                            backgroundColor: 'var(--accent-color)',
+                            borderColor: 'transparent'
+                          }}
+                          onClick={() => {
+                            setCurrentSection('ppdb');
+                            setExpandedRegId(reg.id);
+                          }}
+                        >
+                          Kelola & Verifikasi
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              );
+            })()}
 
             {/* Metrics */}
             <section className={styles.grid}>

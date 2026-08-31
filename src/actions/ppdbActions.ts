@@ -10,6 +10,7 @@ import { revalidatePath } from 'next/cache';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { callSheetsAPI } from '@/lib/db/googleSheets';
+import { sendEmail } from '@/lib/email';
 
 // Helper function untuk mengirim berkas bukti transfer ke Telegram Bot
 export async function sendFileToTelegram(file: any, caption: string, maxSizeMb: number = 2): Promise<boolean> {
@@ -158,6 +159,21 @@ export async function getQuotaAction(unit: string, ta: string) {
   }
 }
 
+// Helper function to map unit to admin email
+function getAdminEmailForUnit(namaUnit: string): string {
+  const name = (namaUnit || '').toLowerCase();
+  if (name.includes('kb') || name.includes('tk') || name.includes('taman main')) {
+    return 'tmroyalattin@gmail.com';
+  }
+  if (name.includes('sd') || name.includes('at-tin islamic') || name.includes('royal at-tin')) {
+    return 'sdroyalattin@gmail.com';
+  }
+  if (name.includes('nura')) {
+    return 'nuratahfidzcentre@gmail.com';
+  }
+  return 'tmroyalattin@gmail.com';
+}
+
 // Action mendaftar PPDB baru
 export async function submitPpdbRegistrationAction(prevState: any, formData: FormData) {
   const nama_unit = formData.get('nama_unit') as string;
@@ -189,6 +205,86 @@ export async function submitPpdbRegistrationAction(prevState: any, formData: For
 
     // Kirim berkas ke Telegram
     await sendFileToTelegram(bukti_bayar_file, caption, 2);
+
+    // Kirim email notifikasi ke admin unit terkait secara asynchronous (background task)
+    try {
+      const adminEmail = getAdminEmailForUnit(nama_unit);
+      const yayasanEmail = 'tamanattinrawamangun@gmail.com';
+      const emailSubject = `[PPDB Baru] Pendaftaran Siswa Baru - ${nama_anak} (${nama_unit})`;
+      const emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #f9f9f9;">
+          <div style="text-align: center; border-bottom: 2px solid #3b82f6; padding-bottom: 15px; margin-bottom: 20px;">
+            <h2 style="color: #1e3a8a; margin: 0;">Pemberitahuan Pendaftaran PPDB Baru</h2>
+            <p style="color: #6b7280; font-size: 14px; margin: 5px 0 0 0;">Portal Akademik Royal At-Tin</p>
+          </div>
+          
+          <p style="font-size: 16px; color: #333333;">Halo Admin / Pengurus Yayasan,</p>
+          <p style="font-size: 14px; color: #555555; line-height: 1.5;">
+            Telah diterima pendaftaran siswa baru secara online di portal PPDB. Berikut adalah rincian data calon siswa yang telah diinput oleh Wali Murid:
+          </p>
+          
+          <div style="background-color: #ffffff; padding: 15px; border-radius: 6px; border-left: 4px solid #3b82f6; margin-bottom: 20px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px; color: #333333;">
+              <tr>
+                <td style="padding: 6px 0; font-weight: bold; width: 35%; vertical-align: top;">Nama Anak:</td>
+                <td style="padding: 6px 0; vertical-align: top;">${nama_anak}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; font-weight: bold; vertical-align: top;">Tanggal Lahir:</td>
+                <td style="padding: 6px 0; vertical-align: top;">${tanggal_lahir}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; font-weight: bold; vertical-align: top;">Orang Tua / Wali:</td>
+                <td style="padding: 6px 0; vertical-align: top;">${nama_orang_tua}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; font-weight: bold; vertical-align: top;">No. WhatsApp:</td>
+                <td style="padding: 6px 0; vertical-align: top;">
+                  <a href="https://wa.me/${cleanWa}" style="color: #3b82f6; text-decoration: none; font-weight: bold;">${whatsapp}</a>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; font-weight: bold; vertical-align: top;">Unit Sekolah:</td>
+                <td style="padding: 6px 0; vertical-align: top;">${nama_unit}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; font-weight: bold; vertical-align: top;">Tahun Ajaran:</td>
+                <td style="padding: 6px 0; vertical-align: top;">${tahun_ajaran}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; font-weight: bold; vertical-align: top;">Alamat Rumah:</td>
+                <td style="padding: 6px 0; vertical-align: top;">${alamat_rumah}</td>
+              </tr>
+            </table>
+          </div>
+          
+          <p style="font-size: 14px; color: #555555; line-height: 1.5; margin-bottom: 25px;">
+            Harap segera masuk ke Dashboard Admin Portal Akademik Royal At-Tin untuk melakukan verifikasi pembayaran pendaftaran dan menjadwalkan psikotest calon siswa ini.
+          </p>
+          
+          <div style="text-align: center; margin-bottom: 25px;">
+            <a href="https://royalattin.sch.id/dashboard" style="background-color: #3b82f6; color: #ffffff; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 6px; display: inline-block; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+              Masuk ke Portal Dashboard
+            </a>
+          </div>
+          
+          <div style="border-top: 1px solid #e0e0e0; padding-top: 15px; text-align: center; color: #9ca3af; font-size: 12px;">
+            Sistem Notifikasi Otomatis PPDB Royal At-Tin<br>
+            Harap tidak membalas email ini secara langsung.
+          </div>
+        </div>
+      `;
+
+      sendEmail({ to: adminEmail, subject: emailSubject, html: emailHtml }).catch((emailErr) => {
+        console.error('Failed to send admin email in background:', emailErr);
+      });
+
+      sendEmail({ to: yayasanEmail, subject: emailSubject, html: emailHtml }).catch((emailErr) => {
+        console.error('Failed to send yayasan email in background:', emailErr);
+      });
+    } catch (emailErr: any) {
+      console.error('Failed to initiate admin/yayasan email sending:', emailErr.message);
+    }
   } catch (err: any) {
     return { error: `Gagal mengirim data bukti transfer ke Telegram. Detail: ${err.message}` };
   }
