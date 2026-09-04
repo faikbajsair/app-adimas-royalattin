@@ -103,17 +103,48 @@ export class PpdbModel extends BaseModel {
     await this.ensureSheetExists(PpdbModel.HEADERS);
     const all = await this.getAll();
 
-    // Singkatan unit untuk format No Pendaftaran (misal: REG-TK-2026-0001)
+    // Format Kode Unit (TK, SD, NURA, atau custom)
     let unitCode = 'SCH';
-    if (data.nama_unit.toLowerCase().includes('tk')) unitCode = 'TK';
-    else if (data.nama_unit.toLowerCase().includes('sd')) unitCode = 'SD';
-    else if (data.nama_unit.toLowerCase().includes('nura')) unitCode = 'NURA';
+    const lowerUnit = (data.nama_unit || '').toLowerCase();
+    if (lowerUnit.includes('tk') || lowerUnit.includes('kb') || lowerUnit.includes('taman main')) unitCode = 'TK';
+    else if (lowerUnit.includes('sd') || lowerUnit.includes('at-tin islamic')) unitCode = 'SD';
+    else if (lowerUnit.includes('nura')) unitCode = 'NURA';
+    else {
+      unitCode = data.nama_unit.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 4) || 'SCH';
+    }
 
-    const year = data.tahun_ajaran.split('/')[0];
-    const prefix = `REG-${unitCode}-${year}-`;
-    const count = all.filter(item => item.no_pendaftaran?.startsWith(prefix)).length + 1;
+    // Format Tanggal (DDMMYYYY) & Waktu (HHmmss) dalam Zona Waktu Indonesia (WIB / Asia/Jakarta)
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat('id-ID', {
+      timeZone: 'Asia/Jakarta',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+    const parts = formatter.formatToParts(now);
+    const getPart = (type: string) => parts.find(p => p.type === type)?.value || '00';
+    
+    const day = getPart('day');
+    const month = getPart('month');
+    const year = getPart('year');
+    const hour = getPart('hour');
+    const minute = getPart('minute');
+    const second = getPart('second');
+
+    const dateStr = `${day}${month}${year}`;
+    const timeStr = `${hour}${minute}${second}`;
+
+    // Nomor Urut Registrasi (4 digit sequence)
+    const count = all.length + 1;
     const serial = String(count).padStart(4, '0');
-    const noPendaftaran = `${prefix}${serial}`;
+
+    // Format: Reg-{nama-unit}-{tgl/bulan/tahun}-{waktu jam-menit-detik}-{nomer urut registrasi}
+    // Contoh: Reg-TK-04092026-234512-0001
+    const noPendaftaran = `Reg-${unitCode}-${dateStr}-${timeStr}-${serial}`;
 
     const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
     

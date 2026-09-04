@@ -84,18 +84,18 @@ export async function sendFileToTelegram(file: any, caption: string, maxSizeMb: 
   }
 }
 
-// Helper function untuk menyimpan file upload di Google Drive via Apps Script (digunakan untuk Brosur Sekolah)
-export async function saveUploadedFile(file: any, maxSizeMb: number = 2): Promise<string> {
+// Helper function untuk menyimpan file upload baik ke direktori publik lokal maupun Google Drive
+export async function saveUploadedFile(file: any, maxSizeMb: number = 5, subfolder: string = 'bukti'): Promise<string> {
   if (!file || typeof file !== 'object' || !('size' in file) || file.size === 0) {
     return '';
   }
 
-  // 1. Validasi Ekstensi & MIME Type (JPG, PNG, PDF)
-  const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+  // 1. Validasi Ekstensi & MIME Type (JPG, PNG, PDF, WEBP)
+  const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf', 'image/webp'];
   const fileMimeType = file.type || '';
-  const fileName = file.name || '';
+  const fileName = file.name || 'berkas';
   const fileExt = fileName.split('.').pop()?.toLowerCase();
-  const allowedExts = ['jpg', 'jpeg', 'png', 'pdf'];
+  const allowedExts = ['jpg', 'jpeg', 'png', 'pdf', 'webp'];
 
   if (!allowedMimeTypes.includes(fileMimeType) && !allowedExts.includes(fileExt || '')) {
     throw new Error('Format file tidak didukung. Hanya diperbolehkan format JPG, PNG, atau PDF.');
@@ -110,22 +110,37 @@ export async function saveUploadedFile(file: any, maxSizeMb: number = 2): Promis
   try {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const base64Data = buffer.toString('base64');
-    
-    // Kirim ke Google Apps Script Web App
-    const response = await callSheetsAPI('uploadFile', {
-      base64Data,
-      fileName: `${Date.now()}-${fileName.replace(/[^a-zA-Z0-9.]/g, '_')}`,
-      mimeType: fileMimeType || 'application/octet-stream'
-    });
 
-    if (response && response.success && response.url) {
-      return response.url;
+    // Simpan berkas fisik ke direktori public/uploads/${subfolder}
+    const timestamp = Date.now();
+    const randomStr = Math.random().toString(36).substring(2, 7);
+    const cleanFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const uniqueFileName = `${timestamp}_${randomStr}_${cleanFileName}`;
+
+    const uploadsDir = join(process.cwd(), 'public', 'uploads', subfolder);
+    await mkdir(uploadsDir, { recursive: true });
+    const filePath = join(uploadsDir, uniqueFileName);
+    await writeFile(filePath, buffer);
+
+    const localUrl = `/uploads/${subfolder}/${uniqueFileName}`;
+
+    // Coba upload ke Google Drive via Google Apps Script jika terhubung
+    try {
+      const base64Data = buffer.toString('base64');
+      const response = await callSheetsAPI('uploadFile', {
+        base64Data,
+        fileName: uniqueFileName,
+        mimeType: fileMimeType || 'application/octet-stream'
+      });
+
+      if (response && response.success && response.url) {
+        return response.url;
+      }
+    } catch (driveErr: any) {
+      console.warn('Fallback ke penyimpanan lokal:', localUrl);
     }
-    
-    const errMsg = response && response.error ? response.error : 'Respons dari Apps Script tidak valid.';
-    console.error('Google Drive Upload Error:', errMsg);
-    throw new Error(`Gagal menyimpan ke Google Drive. Detail error: ${errMsg}`);
+
+    return localUrl;
   } catch (err: any) {
     console.error('Error saveUploadedFile:', err.message);
     throw err;
@@ -186,11 +201,19 @@ export async function submitPpdbRegistrationAction(prevState: any, formData: For
   
   // Ambil file bukti bayar dari upload galeri
   const bukti_bayar_file = formData.get('bukti_bayar_file');
-  
-  // Format nomor WA dan buat link WhatsApp Orang Tua untuk disimpan di database
+  if (!bukti_bayar_file || typeof bukti_bayar_file !== 'object' || !('size' in bukti_bayar_file) || (bukti_bayar_file as any).size === 0) {
+    return { error: 'Bukti transfer biaya pendaftaran wajib diunggah.' };
+  }
+
+  // Simpan berkas bukti transfer fisik
+  let bukti_bayar_url = '';
+  try {
+    bukti_bayar_url = await saveUploadedFile(bukti_bayar_file, 5, 'bukti');
+  } catch (uploadErr: any) {
+    return { error: `Gagal menyimpan berkas bukti transfer: ${uploadErr.message}` };
+  }
+
   const cleanWa = whatsapp.replace(/[^0-9]/g, '');
-  const waText = encodeURIComponent(`Halo, ini Admin PPDB Royal Attin. Terkait pendaftaran anak Anda: ${nama_anak}. Mohon kirimkan berkas bukti transfer pendaftarannya di sini. Terima kasih.`);
-  const bukti_bayar_url = `https://wa.me/${cleanWa}?text=${waText}`;
 
   try {
     // Susun isi pesan notifikasi ke Telegram dengan HTML parse mode
@@ -204,7 +227,9 @@ export async function submitPpdbRegistrationAction(prevState: any, formData: For
       `📄 <i>Bukti transfer pendaftaran terlampir di bawah ini.</i>`;
 
     // Kirim berkas ke Telegram
-    await sendFileToTelegram(bukti_bayar_file, caption, 2);
+    await sendFileToTelegram(bukti_bayar_file, caption, 2).catch((tErr) => {
+      console.error('Telegram notification error:', tErr.message);
+    });
 
     // Kirim email notifikasi ke admin unit terkait secara asynchronous (background task)
     try {
@@ -345,7 +370,7 @@ export async function searchPpdbAction(query: string) {
   const cleanQuery = query.trim();
   try {
     const ppdbModel = new PpdbModel();
-    if (cleanQuery.startsWith('REG-')) {
+    if (cleanQuery.toUpperCase().startsWith('REG-') || cleanQuery.toUpperCase().startsWith('REG')) {
       const match = await ppdbModel.findByRegistrationNo(cleanQuery);
       return { success: true, data: match ? [match] : [] };
     } else {
@@ -413,9 +438,13 @@ export async function uploadQuotaPaymentProofAction(
     const cleanWa = whatsapp.replace(/[^0-9]/g, '');
     const labelPembayaran = field.replace(/_/g, ' ').toUpperCase();
     
-    // Buat link WA orang tua sebagai bukti pembayaran untuk database
-    const waText = encodeURIComponent(`Halo, ini Admin PPDB Royal Attin. Terkait pembayaran ${labelPembayaran} an. ${nama_anak} (ID: ${id}). Mohon kirimkan berkas bukti transfernya di sini. Terima kasih.`);
-    const url = `https://wa.me/${cleanWa}?text=${waText}`;
+    // Simpan berkas bukti transfer fisik ke direktori uploads
+    let url = '';
+    try {
+      url = await saveUploadedFile(file, 5, 'bukti');
+    } catch (uploadErr: any) {
+      return { error: `Gagal menyimpan berkas bukti transfer: ${uploadErr.message}` };
+    }
 
     // Susun isi pesan notifikasi ke Telegram dengan HTML parse mode
     const caption = `💰 <b>PEMBAYARAN ANGSURAN PPDB</b> 💰\n\n` +
@@ -429,7 +458,9 @@ export async function uploadQuotaPaymentProofAction(
       `📄 <i>Bukti transfer pembayaran terlampir di bawah ini.</i>`;
 
     // Kirim berkas ke Telegram
-    await sendFileToTelegram(file, caption, 2);
+    await sendFileToTelegram(file, caption, 2).catch((tErr) => {
+      console.error('Telegram notification error:', tErr.message);
+    });
 
     // Update status berdasarkan tahapan pembayaran yang diunggah
     let nextStatus = raw.status;

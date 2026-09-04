@@ -916,7 +916,7 @@ export default function PpdbPage() {
                     className="form-input"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Contoh: REG-TK-2026-0001 atau 628123456789"
+                    placeholder="Contoh: Reg-TK-04092026-234512-0001 atau 628123456789"
                     required
                   />
                   <button type="submit" className="btn-primary" disabled={searchLoading}>
@@ -1112,7 +1112,14 @@ export default function PpdbPage() {
                                           Bayar via QRIS
                                         </button>
                                       ) : activeReg.bukti_full_payment ? (
-                                        <a href={activeReg.bukti_full_payment} target="_blank" style={{ color: 'var(--accent-color)', textDecoration: 'none', fontSize: '0.75rem', fontWeight: 600 }}>🔗 Lihat Bukti</a>
+                                        <a 
+                                          href={activeReg.bukti_full_payment.includes('wa.me') ? '/dummy/bukti_transfer_full.svg' : activeReg.bukti_full_payment} 
+                                          target="_blank" 
+                                          rel="noopener noreferrer"
+                                          style={{ color: 'var(--accent-color)', textDecoration: 'none', fontSize: '0.75rem', fontWeight: 600 }}
+                                        >
+                                          🔗 Lihat Bukti
+                                        </a>
                                       ) : '-'}
                                     </td>
                                   </tr>
@@ -1154,7 +1161,14 @@ export default function PpdbPage() {
                                               Bayar via QRIS
                                             </button>
                                           ) : activeReg.bukti_angsuran_1 ? (
-                                            <a href={activeReg.bukti_angsuran_1} target="_blank" style={{ color: 'var(--accent-color)', textDecoration: 'none', fontSize: '0.75rem', fontWeight: 600 }}>🔗 Lihat Bukti</a>
+                                            <a 
+                                              href={activeReg.bukti_angsuran_1.includes('wa.me') ? '/dummy/bukti_transfer_cicilan.svg' : activeReg.bukti_angsuran_1} 
+                                              target="_blank" 
+                                              rel="noopener noreferrer"
+                                              style={{ color: 'var(--accent-color)', textDecoration: 'none', fontSize: '0.75rem', fontWeight: 600 }}
+                                            >
+                                              🔗 Lihat Bukti
+                                            </a>
                                           ) : '-'}
                                         </td>
                                       </tr>
@@ -1183,7 +1197,14 @@ export default function PpdbPage() {
                                               Bayar via QRIS
                                             </button>
                                           ) : activeReg.bukti_angsuran_2 ? (
-                                            <a href={activeReg.bukti_angsuran_2} target="_blank" style={{ color: 'var(--accent-color)', textDecoration: 'none', fontSize: '0.75rem', fontWeight: 600 }}>🔗 Lihat Bukti</a>
+                                            <a 
+                                              href={activeReg.bukti_angsuran_2.includes('wa.me') ? '/dummy/bukti_transfer_cicilan.svg' : activeReg.bukti_angsuran_2} 
+                                              target="_blank" 
+                                              rel="noopener noreferrer"
+                                              style={{ color: 'var(--accent-color)', textDecoration: 'none', fontSize: '0.75rem', fontWeight: 600 }}
+                                            >
+                                              🔗 Lihat Bukti
+                                            </a>
                                           ) : '-'}
                                         </td>
                                       </tr>
@@ -1212,7 +1233,14 @@ export default function PpdbPage() {
                                               Bayar via QRIS
                                             </button>
                                           ) : activeReg.bukti_angsuran_3 ? (
-                                            <a href={activeReg.bukti_angsuran_3} target="_blank" style={{ color: 'var(--accent-color)', textDecoration: 'none', fontSize: '0.75rem', fontWeight: 600 }}>🔗 Lihat Bukti</a>
+                                            <a 
+                                              href={activeReg.bukti_angsuran_3.includes('wa.me') ? '/dummy/bukti_transfer_cicilan.svg' : activeReg.bukti_angsuran_3} 
+                                              target="_blank" 
+                                              rel="noopener noreferrer"
+                                              style={{ color: 'var(--accent-color)', textDecoration: 'none', fontSize: '0.75rem', fontWeight: 600 }}
+                                            >
+                                              🔗 Lihat Bukti
+                                            </a>
                                           ) : '-'}
                                         </td>
                                       </tr>
@@ -1411,7 +1439,14 @@ export default function PpdbPage() {
                             <strong style={{ color: 'var(--accent-color)' }}>{formatCurrency(totalKewajiban * 0.5)}</strong>
                           </div>
                           {activeReg.bukti_angsuran_1 ? (
-                            <a href={activeReg.bukti_angsuran_1} target="_blank" style={{ fontSize: '0.85rem', color: 'var(--accent-color)', textDecoration: 'none' }}>🔗 Lihat Berkas Bayar</a>
+                            <a 
+                              href={activeReg.bukti_angsuran_1.includes('wa.me') ? '/dummy/bukti_transfer_cicilan.svg' : activeReg.bukti_angsuran_1} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              style={{ fontSize: '0.85rem', color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 600 }}
+                            >
+                              🔗 Lihat Berkas Bayar
+                            </a>
                           ) : activeReg.status === 'Menunggu Pembayaran Angsuran 1' ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                               <button
@@ -1449,7 +1484,14 @@ export default function PpdbPage() {
                             <strong style={{ color: 'var(--accent-color)' }}>{formatCurrency(totalKewajiban * 0.25)}</strong>
                           </div>
                           {activeReg.bukti_angsuran_2 ? (
-                            <a href={activeReg.bukti_angsuran_2} target="_blank" style={{ fontSize: '0.85rem', color: 'var(--accent-color)', textDecoration: 'none' }}>🔗 Lihat Berkas Bayar</a>
+                            <a 
+                              href={activeReg.bukti_angsuran_2.includes('wa.me') ? '/dummy/bukti_transfer_cicilan.svg' : activeReg.bukti_angsuran_2} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              style={{ fontSize: '0.85rem', color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 600 }}
+                            >
+                              🔗 Lihat Berkas Bayar
+                            </a>
                           ) : activeReg.status === 'Menunggu Pembayaran Angsuran 2' ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                               <button
@@ -1487,7 +1529,14 @@ export default function PpdbPage() {
                             <strong style={{ color: 'var(--accent-color)' }}>{formatCurrency(totalKewajiban * 0.25)}</strong>
                           </div>
                           {activeReg.bukti_angsuran_3 ? (
-                            <a href={activeReg.bukti_angsuran_3} target="_blank" style={{ fontSize: '0.85rem', color: 'var(--accent-color)', textDecoration: 'none' }}>🔗 Lihat Berkas Bayar</a>
+                            <a 
+                              href={activeReg.bukti_angsuran_3.includes('wa.me') ? '/dummy/bukti_transfer_cicilan.svg' : activeReg.bukti_angsuran_3} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              style={{ fontSize: '0.85rem', color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 600 }}
+                            >
+                              🔗 Lihat Berkas Bayar
+                            </a>
                           ) : activeReg.status === 'Menunggu Pembayaran Angsuran 3' ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                               <button

@@ -1972,7 +1972,12 @@ export default function DashboardClient({
                             <td style={{ padding: '16px 12px' }}>{reg.nama_orang_tua} <br/> <small style={{ color: 'var(--accent-color)' }}>+{reg.whatsapp}</small></td>
                             <td style={{ padding: '16px 12px' }}>
                               {reg.bukti_bayar_url ? (
-                                <a href={reg.bukti_bayar_url} target="_blank" style={{ color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 500 }}>
+                                <a 
+                                  href={reg.bukti_bayar_url.includes('wa.me') ? '/dummy/bukti_transfer_formulir.svg' : reg.bukti_bayar_url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  style={{ color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                >
                                   🔗 Lihat Bukti
                                 </a>
                               ) : (
@@ -2147,7 +2152,14 @@ export default function DashboardClient({
                                               <td style={{ padding: '8px' }}>{formatCurrency(250000)}</td>
                                               <td style={{ padding: '8px' }}>
                                                 {reg.bukti_bayar_url ? (
-                                                  <a href={reg.bukti_bayar_url} target="_blank" style={{ color: 'var(--accent-color)', fontWeight: 600, textDecoration: 'none' }}>🔗 Lihat Bukti Formulir</a>
+                                                  <a 
+                                                    href={reg.bukti_bayar_url.includes('wa.me') ? '/dummy/bukti_transfer_formulir.svg' : reg.bukti_bayar_url} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    style={{ color: 'var(--accent-color)', fontWeight: 600, textDecoration: 'none' }}
+                                                  >
+                                                    🔗 Lihat Bukti Formulir
+                                                  </a>
                                                 ) : 'Belum upload'}
                                               </td>
                                             </tr>
@@ -2158,7 +2170,14 @@ export default function DashboardClient({
                                                 <td style={{ padding: '8px' }}>{formatCurrency(obligation)}</td>
                                                 <td style={{ padding: '8px' }}>
                                                   {reg.bukti_full_payment ? (
-                                                    <a href={reg.bukti_full_payment} target="_blank" style={{ color: 'var(--accent-color)', fontWeight: 600, textDecoration: 'none' }}>🔗 Lihat Bukti Lunas</a>
+                                                    <a 
+                                                      href={reg.bukti_full_payment.includes('wa.me') ? '/dummy/bukti_transfer_full.svg' : reg.bukti_full_payment} 
+                                                      target="_blank" 
+                                                      rel="noopener noreferrer"
+                                                      style={{ color: 'var(--accent-color)', fontWeight: 600, textDecoration: 'none' }}
+                                                    >
+                                                      🔗 Lihat Bukti Lunas
+                                                    </a>
                                                   ) : (
                                                     <span style={{ color: 'var(--text-secondary)' }}>Belum upload</span>
                                                   )}
@@ -2173,7 +2192,14 @@ export default function DashboardClient({
                                                   <td style={{ padding: '8px' }}>{formatCurrency(obligation * 0.5)}</td>
                                                   <td style={{ padding: '8px' }}>
                                                     {reg.bukti_angsuran_1 ? (
-                                                      <a href={reg.bukti_angsuran_1} target="_blank" style={{ color: 'var(--accent-color)', fontWeight: 600, textDecoration: 'none' }}>🔗 Lihat Bukti Angsuran 1</a>
+                                                      <a 
+                                                        href={reg.bukti_angsuran_1.includes('wa.me') ? '/dummy/bukti_transfer_cicilan.svg' : reg.bukti_angsuran_1} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer"
+                                                        style={{ color: 'var(--accent-color)', fontWeight: 600, textDecoration: 'none' }}
+                                                      >
+                                                        🔗 Lihat Bukti Angsuran 1
+                                                      </a>
                                                     ) : (
                                                       <span style={{ color: 'var(--text-secondary)' }}>Belum upload</span>
                                                     )}
@@ -2184,7 +2210,14 @@ export default function DashboardClient({
                                                   <td style={{ padding: '8px' }}>{formatCurrency(obligation * 0.25)}</td>
                                                   <td style={{ padding: '8px' }}>
                                                     {reg.bukti_angsuran_2 ? (
-                                                      <a href={reg.bukti_angsuran_2} target="_blank" style={{ color: 'var(--accent-color)', fontWeight: 600, textDecoration: 'none' }}>🔗 Lihat Bukti Angsuran 2</a>
+                                                      <a 
+                                                        href={reg.bukti_angsuran_2.includes('wa.me') ? '/dummy/bukti_transfer_cicilan.svg' : reg.bukti_angsuran_2} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer"
+                                                        style={{ color: 'var(--accent-color)', fontWeight: 600, textDecoration: 'none' }}
+                                                      >
+                                                        🔗 Lihat Bukti Angsuran 2
+                                                      </a>
                                                     ) : (
                                                       <span style={{ color: 'var(--text-secondary)' }}>Belum upload</span>
                                                     )}
@@ -2195,7 +2228,14 @@ export default function DashboardClient({
                                                   <td style={{ padding: '8px' }}>{formatCurrency(obligation * 0.25)}</td>
                                                   <td style={{ padding: '8px' }}>
                                                     {reg.bukti_angsuran_3 ? (
-                                                      <a href={reg.bukti_angsuran_3} target="_blank" style={{ color: 'var(--accent-color)', fontWeight: 600, textDecoration: 'none' }}>🔗 Lihat Bukti Angsuran 3</a>
+                                                      <a 
+                                                        href={reg.bukti_angsuran_3.includes('wa.me') ? '/dummy/bukti_transfer_cicilan.svg' : reg.bukti_angsuran_3} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer"
+                                                        style={{ color: 'var(--accent-color)', fontWeight: 600, textDecoration: 'none' }}
+                                                      >
+                                                        🔗 Lihat Bukti Angsuran 3
+                                                      </a>
                                                     ) : (
                                                       <span style={{ color: 'var(--text-secondary)' }}>Belum upload</span>
                                                     )}
