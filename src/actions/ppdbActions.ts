@@ -145,11 +145,9 @@ export async function saveUploadedFile(file: any, maxSizeMb: number = 5, subfold
       console.warn('Penyimpanan lokal filesystem dilewati (lingkungan Vercel read-only):', fsErr?.message);
     }
 
-    // C. Fallback: Kembalikan dummy placeholder file jika Google Drive & lokal tidak tersedia
-    if (subfolder === 'brosur') {
-      return `/dummy/brosur_${cleanFileName.includes('sd') ? 'sd' : cleanFileName.includes('nura') ? 'nura' : 'kbtk'}.pdf`;
-    }
-    return '/dummy/bukti_transfer_formulir.svg';
+    // C. Fallback: Simpan sebagai Base64 Data URL jika Google Drive & penyimpanan lokal tidak tersedia
+    // Hal ini menjamin file bukti transfer asli dari wali murid tetap tersimpan 100% utuh tanpa dummy/generate
+    return `data:${fileMimeType || 'image/jpeg'};base64,${base64Data}`;
   } catch (err: any) {
     console.error('Error saveUploadedFile:', err.message);
     throw err;

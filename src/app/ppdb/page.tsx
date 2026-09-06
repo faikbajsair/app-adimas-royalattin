@@ -750,7 +750,7 @@ export default function PpdbPage() {
               <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.5' }}>
                 {sisaKuota !== null && sisaKuota > 0 ? (
                   <span>
-                    Kuota pendaftaran saat ini masih **Tersedia**. Silakan klik tombol <strong>"Lanjut Mengisi Formulir"</strong> untuk mengisi formulir pendaftaran siswa baru.
+                    Kuota pendaftaran saat ini masih <strong>Tersedia</strong>. Silakan klik tombol <strong>"Lanjut Mengisi Formulir"</strong> untuk mengisi formulir pendaftaran siswa baru.
                   </span>
                 ) : sisaKuota === 0 ? (
                   <span style={{ color: '#ef4444', fontWeight: 600 }}>
@@ -772,7 +772,7 @@ export default function PpdbPage() {
             <div className={styles.modalIcon}>❌</div>
             <h3 className={styles.modalTitle} style={{ color: '#ef4444' }}>Kuota Sudah Penuh!</h3>
             <p className={styles.modalDesc}>
-              Mohon maaf, kuota pendaftaran untuk **{ppdbUnit}** pada tahun ajaran **{ppdbYear}** telah terisi penuh. 
+              Mohon maaf, kuota pendaftaran untuk <strong>{ppdbUnit}</strong> pada tahun ajaran <strong>{ppdbYear}</strong> telah terisi penuh. 
               Anda tidak dapat melanjutkan pengisian formulir pendaftaran. Silakan pilih unit sekolah atau tahun ajaran lainnya.
             </p>
             <div className={styles.modalActions}>
@@ -820,7 +820,7 @@ export default function PpdbPage() {
                 </div>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '32px', lineHeight: '1.5' }}>
                   *Notifikasi pemberitahuan telah dikirimkan ke No. WhatsApp Orang Tua/Wali & Admin. 
-                  Silakan ikuti instruksi pembayaran pendaftaran di tab **"Status Pendaftaran"**.
+                  Silakan ikuti instruksi pembayaran pendaftaran di tab <strong>"Status Pendaftaran"</strong>.
                 </p>
                 <button className="btn-primary" onClick={() => { setActiveTab('status'); }}>
                   Lihat Status Pendaftaran Sekarang →
@@ -1182,7 +1182,7 @@ export default function PpdbPage() {
                                         </button>
                                       ) : activeReg.bukti_full_payment ? (
                                         <a 
-                                          href={activeReg.bukti_full_payment.includes('wa.me') ? '/dummy/bukti_transfer_full.svg' : activeReg.bukti_full_payment} 
+                                          href={activeReg.bukti_full_payment} 
                                           target="_blank" 
                                           rel="noopener noreferrer"
                                           style={{ color: 'var(--accent-color)', textDecoration: 'none', fontSize: '0.75rem', fontWeight: 600 }}
@@ -1231,7 +1231,7 @@ export default function PpdbPage() {
                                             </button>
                                           ) : activeReg.bukti_angsuran_1 ? (
                                             <a 
-                                              href={activeReg.bukti_angsuran_1.includes('wa.me') ? '/dummy/bukti_transfer_cicilan.svg' : activeReg.bukti_angsuran_1} 
+                                              href={activeReg.bukti_angsuran_1} 
                                               target="_blank" 
                                               rel="noopener noreferrer"
                                               style={{ color: 'var(--accent-color)', textDecoration: 'none', fontSize: '0.75rem', fontWeight: 600 }}
@@ -1267,7 +1267,7 @@ export default function PpdbPage() {
                                             </button>
                                           ) : activeReg.bukti_angsuran_2 ? (
                                             <a 
-                                              href={activeReg.bukti_angsuran_2.includes('wa.me') ? '/dummy/bukti_transfer_cicilan.svg' : activeReg.bukti_angsuran_2} 
+                                              href={activeReg.bukti_angsuran_2} 
                                               target="_blank" 
                                               rel="noopener noreferrer"
                                               style={{ color: 'var(--accent-color)', textDecoration: 'none', fontSize: '0.75rem', fontWeight: 600 }}
@@ -1303,7 +1303,7 @@ export default function PpdbPage() {
                                             </button>
                                           ) : activeReg.bukti_angsuran_3 ? (
                                             <a 
-                                              href={activeReg.bukti_angsuran_3.includes('wa.me') ? '/dummy/bukti_transfer_cicilan.svg' : activeReg.bukti_angsuran_3} 
+                                              href={activeReg.bukti_angsuran_3} 
                                               target="_blank" 
                                               rel="noopener noreferrer"
                                               style={{ color: 'var(--accent-color)', textDecoration: 'none', fontSize: '0.75rem', fontWeight: 600 }}
@@ -1509,7 +1509,7 @@ export default function PpdbPage() {
                           </div>
                           {activeReg.bukti_angsuran_1 ? (
                             <a 
-                              href={activeReg.bukti_angsuran_1.includes('wa.me') ? '/dummy/bukti_transfer_cicilan.svg' : activeReg.bukti_angsuran_1} 
+                              href={activeReg.bukti_angsuran_1} 
                               target="_blank" 
                               rel="noopener noreferrer"
                               style={{ fontSize: '0.85rem', color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 600 }}
@@ -1554,7 +1554,7 @@ export default function PpdbPage() {
                           </div>
                           {activeReg.bukti_angsuran_2 ? (
                             <a 
-                              href={activeReg.bukti_angsuran_2.includes('wa.me') ? '/dummy/bukti_transfer_cicilan.svg' : activeReg.bukti_angsuran_2} 
+                              href={activeReg.bukti_angsuran_2} 
                               target="_blank" 
                               rel="noopener noreferrer"
                               style={{ fontSize: '0.85rem', color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 600 }}
@@ -1599,7 +1599,7 @@ export default function PpdbPage() {
                           </div>
                           {activeReg.bukti_angsuran_3 ? (
                             <a 
-                              href={activeReg.bukti_angsuran_3.includes('wa.me') ? '/dummy/bukti_transfer_cicilan.svg' : activeReg.bukti_angsuran_3} 
+                              href={activeReg.bukti_angsuran_3} 
                               target="_blank" 
                               rel="noopener noreferrer"
                               style={{ fontSize: '0.85rem', color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 600 }}
@@ -1639,7 +1639,7 @@ export default function PpdbPage() {
                       ⏳ Menunggu Penyerahan Akses Akun Portal
                     </h4>
                     <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
-                      Seluruh proses keuangan daftar ulang Anda telah **Lunas & Terverifikasi**. Akun login portal siswa baru Anda sedang digenerate oleh Tim IT Royal Attin. Detail username dan password login akan muncul di kolom status ini sesaat lagi.
+                      Seluruh proses keuangan daftar ulang Anda telah <strong>Lunas &amp; Terverifikasi</strong>. Akun login portal siswa baru Anda sedang digenerate oleh Tim IT Royal Attin. Detail username dan password login akan muncul di kolom status ini sesaat lagi.
                     </p>
                   </div>
                 )}
@@ -1651,7 +1651,7 @@ export default function PpdbPage() {
                       🎉 Selamat! Seluruh Tahapan PPDB Selesai
                     </h4>
                     <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '20px' }}>
-                      Pendaftaran ulang anak Anda telah **Selesai Lengkap**. Di bawah ini adalah kredensial portal masuk resmi siswa baru Anda untuk digunakan dalam mengakses menu tugas dan raport akademik:
+                      Pendaftaran ulang anak Anda telah <strong>Selesai Lengkap</strong>. Di bawah ini adalah kredensial portal masuk resmi siswa baru Anda untuk digunakan dalam mengakses menu tugas dan raport akademik:
                     </p>
                     <div style={{ backgroundColor: 'var(--bg-primary)', padding: '16px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', fontSize: '0.9rem', marginBottom: '16px' }}>
                       <div style={{ marginBottom: '8px' }}>🔑 Username: <strong>{activeReg.siswa_username || 'siswa_baru_royalattin'}</strong></div>

@@ -1973,7 +1973,7 @@ export default function DashboardClient({
                             <td style={{ padding: '16px 12px' }}>
                               {reg.bukti_bayar_url ? (
                                 <a 
-                                  href={reg.bukti_bayar_url.includes('wa.me') ? '/dummy/bukti_transfer_formulir.svg' : reg.bukti_bayar_url} 
+                                  href={reg.bukti_bayar_url} 
                                   target="_blank" 
                                   rel="noopener noreferrer"
                                   style={{ color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
@@ -2153,7 +2153,7 @@ export default function DashboardClient({
                                               <td style={{ padding: '8px' }}>
                                                 {reg.bukti_bayar_url ? (
                                                   <a 
-                                                    href={reg.bukti_bayar_url.includes('wa.me') ? '/dummy/bukti_transfer_formulir.svg' : reg.bukti_bayar_url} 
+                                                    href={reg.bukti_bayar_url} 
                                                     target="_blank" 
                                                     rel="noopener noreferrer"
                                                     style={{ color: 'var(--accent-color)', fontWeight: 600, textDecoration: 'none' }}
@@ -2171,7 +2171,7 @@ export default function DashboardClient({
                                                 <td style={{ padding: '8px' }}>
                                                   {reg.bukti_full_payment ? (
                                                     <a 
-                                                      href={reg.bukti_full_payment.includes('wa.me') ? '/dummy/bukti_transfer_full.svg' : reg.bukti_full_payment} 
+                                                      href={reg.bukti_full_payment} 
                                                       target="_blank" 
                                                       rel="noopener noreferrer"
                                                       style={{ color: 'var(--accent-color)', fontWeight: 600, textDecoration: 'none' }}
@@ -2193,7 +2193,7 @@ export default function DashboardClient({
                                                   <td style={{ padding: '8px' }}>
                                                     {reg.bukti_angsuran_1 ? (
                                                       <a 
-                                                        href={reg.bukti_angsuran_1.includes('wa.me') ? '/dummy/bukti_transfer_cicilan.svg' : reg.bukti_angsuran_1} 
+                                                        href={reg.bukti_angsuran_1} 
                                                         target="_blank" 
                                                         rel="noopener noreferrer"
                                                         style={{ color: 'var(--accent-color)', fontWeight: 600, textDecoration: 'none' }}
@@ -2211,7 +2211,7 @@ export default function DashboardClient({
                                                   <td style={{ padding: '8px' }}>
                                                     {reg.bukti_angsuran_2 ? (
                                                       <a 
-                                                        href={reg.bukti_angsuran_2.includes('wa.me') ? '/dummy/bukti_transfer_cicilan.svg' : reg.bukti_angsuran_2} 
+                                                        href={reg.bukti_angsuran_2} 
                                                         target="_blank" 
                                                         rel="noopener noreferrer"
                                                         style={{ color: 'var(--accent-color)', fontWeight: 600, textDecoration: 'none' }}
@@ -2229,7 +2229,7 @@ export default function DashboardClient({
                                                   <td style={{ padding: '8px' }}>
                                                     {reg.bukti_angsuran_3 ? (
                                                       <a 
-                                                        href={reg.bukti_angsuran_3.includes('wa.me') ? '/dummy/bukti_transfer_cicilan.svg' : reg.bukti_angsuran_3} 
+                                                        href={reg.bukti_angsuran_3} 
                                                         target="_blank" 
                                                         rel="noopener noreferrer"
                                                         style={{ color: 'var(--accent-color)', fontWeight: 600, textDecoration: 'none' }}
@@ -2726,7 +2726,7 @@ export default function DashboardClient({
                           {/* Info Pengiriman jika sudah submit namun belum dinilai */}
                           {isSubmitted && !mySub.nilai && (
                             <div style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-color)', padding: '16px', borderRadius: 'var(--radius-sm)', fontSize: '0.9rem' }}>
-                              ⏳ **Tugas Terkirim**: "{mySub.jawaban_text}" <br/>
+                              ⏳ <strong>Tugas Terkirim</strong>: "{mySub.jawaban_text}" <br/>
                               {mySub.file_url && <a href={mySub.file_url} target="_blank" style={{ color: 'var(--accent-color)', textDecoration: 'none', display: 'inline-block', marginTop: '8px' }}>🔗 Lihat Berkas Jawaban</a>}
                               <span style={{ display: 'block', marginTop: '8px', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>*Menunggu evaluasi penilaian dan catatan dari guru wali kelas.</span>
                             </div>
