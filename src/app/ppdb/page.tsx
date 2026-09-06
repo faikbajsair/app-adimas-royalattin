@@ -195,6 +195,35 @@ export default function PpdbPage() {
     });
   };
 
+  // State Modal Preview Bukti Transfer
+  const [proofModal, setProofModal] = useState<{
+    isOpen: boolean;
+    url: string;
+    title: string;
+    childName?: string;
+  }>({
+    isOpen: false,
+    url: '',
+    title: '',
+    childName: ''
+  });
+
+  const openProofModal = (url: string, title: string = 'Bukti Pembayaran', childName?: string) => {
+    setProofModal({
+      isOpen: true,
+      url,
+      title,
+      childName
+    });
+  };
+
+  const getProofFileUrl = (id?: string, field: string = 'bukti_bayar_url', fallbackUrl?: string) => {
+    if (id) {
+      return `/api/bukti?id=${encodeURIComponent(id)}&field=${encodeURIComponent(field)}`;
+    }
+    return fallbackUrl || '';
+  };
+
   // Fetch School Info on Mount
   useEffect(() => {
     const loadSchoolInfo = async () => {
@@ -1181,14 +1210,13 @@ export default function PpdbPage() {
                                           Bayar via QRIS
                                         </button>
                                       ) : activeReg.bukti_full_payment ? (
-                                        <a 
-                                          href={activeReg.bukti_full_payment} 
-                                          target="_blank" 
-                                          rel="noopener noreferrer"
-                                          style={{ color: 'var(--accent-color)', textDecoration: 'none', fontSize: '0.75rem', fontWeight: 600 }}
+                                        <button 
+                                          type="button"
+                                          onClick={() => openProofModal(getProofFileUrl(activeReg.id, 'bukti_full_payment', activeReg.bukti_full_payment), 'Bukti Pembayaran Lunas', activeReg.nama_anak)}
+                                          style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent-color)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}
                                         >
                                           🔗 Lihat Bukti
-                                        </a>
+                                        </button>
                                       ) : '-'}
                                     </td>
                                   </tr>
@@ -1230,14 +1258,13 @@ export default function PpdbPage() {
                                               Bayar via QRIS
                                             </button>
                                           ) : activeReg.bukti_angsuran_1 ? (
-                                            <a 
-                                              href={activeReg.bukti_angsuran_1} 
-                                              target="_blank" 
-                                              rel="noopener noreferrer"
-                                              style={{ color: 'var(--accent-color)', textDecoration: 'none', fontSize: '0.75rem', fontWeight: 600 }}
+                                            <button 
+                                              type="button"
+                                              onClick={() => openProofModal(getProofFileUrl(activeReg.id, 'bukti_angsuran_1', activeReg.bukti_angsuran_1), 'Bukti Pembayaran Angsuran 1', activeReg.nama_anak)}
+                                              style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent-color)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}
                                             >
                                               🔗 Lihat Bukti
-                                            </a>
+                                            </button>
                                           ) : '-'}
                                         </td>
                                       </tr>
@@ -1266,14 +1293,13 @@ export default function PpdbPage() {
                                               Bayar via QRIS
                                             </button>
                                           ) : activeReg.bukti_angsuran_2 ? (
-                                            <a 
-                                              href={activeReg.bukti_angsuran_2} 
-                                              target="_blank" 
-                                              rel="noopener noreferrer"
-                                              style={{ color: 'var(--accent-color)', textDecoration: 'none', fontSize: '0.75rem', fontWeight: 600 }}
+                                            <button 
+                                              type="button"
+                                              onClick={() => openProofModal(getProofFileUrl(activeReg.id, 'bukti_angsuran_2', activeReg.bukti_angsuran_2), 'Bukti Pembayaran Angsuran 2', activeReg.nama_anak)}
+                                              style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent-color)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}
                                             >
                                               🔗 Lihat Bukti
-                                            </a>
+                                            </button>
                                           ) : '-'}
                                         </td>
                                       </tr>
@@ -1302,14 +1328,13 @@ export default function PpdbPage() {
                                               Bayar via QRIS
                                             </button>
                                           ) : activeReg.bukti_angsuran_3 ? (
-                                            <a 
-                                              href={activeReg.bukti_angsuran_3} 
-                                              target="_blank" 
-                                              rel="noopener noreferrer"
-                                              style={{ color: 'var(--accent-color)', textDecoration: 'none', fontSize: '0.75rem', fontWeight: 600 }}
+                                            <button 
+                                              type="button"
+                                              onClick={() => openProofModal(getProofFileUrl(activeReg.id, 'bukti_angsuran_3', activeReg.bukti_angsuran_3), 'Bukti Pembayaran Angsuran 3 (Pelunasan)', activeReg.nama_anak)}
+                                              style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent-color)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}
                                             >
                                               🔗 Lihat Bukti
-                                            </a>
+                                            </button>
                                           ) : '-'}
                                         </td>
                                       </tr>
@@ -1508,14 +1533,13 @@ export default function PpdbPage() {
                             <strong style={{ color: 'var(--accent-color)' }}>{formatCurrency(totalKewajiban * 0.5)}</strong>
                           </div>
                           {activeReg.bukti_angsuran_1 ? (
-                            <a 
-                              href={activeReg.bukti_angsuran_1} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              style={{ fontSize: '0.85rem', color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 600 }}
+                            <button 
+                              type="button"
+                              onClick={() => openProofModal(getProofFileUrl(activeReg.id, 'bukti_angsuran_1', activeReg.bukti_angsuran_1), 'Bukti Pembayaran Angsuran 1', activeReg.nama_anak)}
+                              style={{ background: 'none', border: 'none', padding: 0, fontSize: '0.85rem', color: 'var(--accent-color)', cursor: 'pointer', fontWeight: 600 }}
                             >
                               🔗 Lihat Berkas Bayar
-                            </a>
+                            </button>
                           ) : activeReg.status === 'Menunggu Pembayaran Angsuran 1' ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                               <button
@@ -1553,14 +1577,13 @@ export default function PpdbPage() {
                             <strong style={{ color: 'var(--accent-color)' }}>{formatCurrency(totalKewajiban * 0.25)}</strong>
                           </div>
                           {activeReg.bukti_angsuran_2 ? (
-                            <a 
-                              href={activeReg.bukti_angsuran_2} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              style={{ fontSize: '0.85rem', color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 600 }}
+                            <button 
+                              type="button"
+                              onClick={() => openProofModal(getProofFileUrl(activeReg.id, 'bukti_angsuran_2', activeReg.bukti_angsuran_2), 'Bukti Pembayaran Angsuran 2', activeReg.nama_anak)}
+                              style={{ background: 'none', border: 'none', padding: 0, fontSize: '0.85rem', color: 'var(--accent-color)', cursor: 'pointer', fontWeight: 600 }}
                             >
                               🔗 Lihat Berkas Bayar
-                            </a>
+                            </button>
                           ) : activeReg.status === 'Menunggu Pembayaran Angsuran 2' ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                               <button
@@ -1598,14 +1621,13 @@ export default function PpdbPage() {
                             <strong style={{ color: 'var(--accent-color)' }}>{formatCurrency(totalKewajiban * 0.25)}</strong>
                           </div>
                           {activeReg.bukti_angsuran_3 ? (
-                            <a 
-                              href={activeReg.bukti_angsuran_3} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              style={{ fontSize: '0.85rem', color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 600 }}
+                            <button 
+                              type="button"
+                              onClick={() => openProofModal(getProofFileUrl(activeReg.id, 'bukti_angsuran_3', activeReg.bukti_angsuran_3), 'Bukti Pembayaran Angsuran 3 (Pelunasan)', activeReg.nama_anak)}
+                              style={{ background: 'none', border: 'none', padding: 0, fontSize: '0.85rem', color: 'var(--accent-color)', cursor: 'pointer', fontWeight: 600 }}
                             >
                               🔗 Lihat Berkas Bayar
-                            </a>
+                            </button>
                           ) : activeReg.status === 'Menunggu Pembayaran Angsuran 3' ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                               <button
@@ -1911,6 +1933,189 @@ export default function PpdbPage() {
             >
               Oke
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL LIGHTBOX PREVIEW BUKTI TRANSFER */}
+      {proofModal.isOpen && (
+        <div 
+          onClick={() => setProofModal(prev => ({ ...prev, isOpen: false }))}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(6px)',
+            zIndex: 99999,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '20px'
+          }}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: 'var(--bg-card, #ffffff)',
+              borderRadius: '16px',
+              maxWidth: '650px',
+              width: '100%',
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
+              border: '1px solid var(--border-color)',
+              overflow: 'hidden'
+            }}
+          >
+            {/* Modal Header */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '16px 20px',
+              borderBottom: '1px solid var(--border-color)',
+              backgroundColor: 'var(--bg-primary)'
+            }}>
+              <div>
+                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  📄 {proofModal.title}
+                </h4>
+                {proofModal.childName && (
+                  <small style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+                    Siswa: <strong>{proofModal.childName}</strong>
+                  </small>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setProofModal(prev => ({ ...prev, isOpen: false }))}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: 'var(--text-secondary)',
+                  padding: '4px 8px',
+                  borderRadius: '6px'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body / Image Viewer */}
+            <div style={{
+              padding: '20px',
+              overflowY: 'auto',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              backgroundColor: '#0f172a',
+              minHeight: '300px'
+            }}>
+              {proofModal.url.includes('.pdf') || proofModal.url.startsWith('data:application/pdf') ? (
+                <iframe 
+                  src={proofModal.url} 
+                  title={proofModal.title}
+                  style={{ width: '100%', height: '65vh', border: 'none', borderRadius: '8px' }}
+                />
+              ) : (
+                <img 
+                  src={proofModal.url} 
+                  alt={proofModal.title}
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '65vh',
+                    objectFit: 'contain',
+                    borderRadius: '8px',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                    display: 'block'
+                  }}
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    target.style.display = 'none';
+                    if (target.parentElement) {
+                      const msg = document.createElement('div');
+                      msg.style.color = '#ffffff';
+                      msg.style.padding = '20px';
+                      msg.style.textAlign = 'center';
+                      msg.innerHTML = '⚠️ Berkas gambar tidak dapat dimuat langsung.<br/><br/><a href="' + proofModal.url + '" target="_blank" style="color: #38bdf8; text-decoration: underline;">Klik di sini untuk membuka di tab baru</a>';
+                      target.parentElement.appendChild(msg);
+                    }
+                  }}
+                />
+              )}
+            </div>
+
+            {/* Modal Footer Actions */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '12px 20px',
+              borderTop: '1px solid var(--border-color)',
+              backgroundColor: 'var(--bg-primary)'
+            }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <a
+                  href={proofModal.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-primary"
+                  style={{
+                    padding: '8px 14px',
+                    fontSize: '0.8rem',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    backgroundColor: 'var(--accent-color)',
+                    backgroundImage: 'none'
+                  }}
+                >
+                  🌐 Buka di Tab Baru
+                </a>
+                <a
+                  href={proofModal.url}
+                  download={`bukti_transfer_${proofModal.childName ? proofModal.childName.replace(/\s+/g, '_') : 'pembayaran'}`}
+                  style={{
+                    padding: '8px 14px',
+                    fontSize: '0.8rem',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color)',
+                    backgroundColor: 'var(--bg-card)',
+                    color: 'var(--text-primary)',
+                    fontWeight: 600
+                  }}
+                >
+                  ⬇ Unduh Berkas
+                </a>
+              </div>
+              <button
+                type="button"
+                onClick={() => setProofModal(prev => ({ ...prev, isOpen: false }))}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-color)',
+                  backgroundColor: 'var(--bg-card)',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  fontSize: '0.8rem'
+                }}
+              >
+                Tutup
+              </button>
+            </div>
           </div>
         </div>
       )}
