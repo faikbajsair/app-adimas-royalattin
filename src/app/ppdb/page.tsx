@@ -36,28 +36,63 @@ const UNIT_PROFILES = [
     id: 'kbtk',
     name: 'KB & TK Taman Main Royal At-Tin',
     shortName: 'KB-TK Taman Main',
-    visi: 'Terwujudnya generasi Islam yang berakhlak mulia, cerdas, kreatif, mandiri, dan berpeduli lingkungan sejak dini.',
-    misi: 'Menyelenggarakan pendidikan Islam anak usia dini secara holistik, membina kemandirian motorik dan kognitif dengan metode bermain sambil belajar, serta memupuk rasa empati sosial.',
+    visi: 'Terwujudnya generasi muslim yang berakhlak mulia, percaya diri dan berprestasi melalui pendidikan yang berlandaskan pada Al-Quran dan As-Sunnah.',
+    misi: [
+      'Mengenalkan nilai-nilai dan adab-adab islami sejak usia dini',
+      'Menciptakan lingkungan bermain dan belajar yang menyenangkan',
+      'Menyediakan fasilitas yang aman dan berkualitas',
+      'Mengembangkan potensi karakter kemandirian dan kepercayaan diri',
+      'Mengembangkan kemampuan berbahasa dan berfikir logis',
+      'Mengembangkan kemampuan sosial dan motorik'
+    ],
+    tujuan: [
+      'Mengenal Allah Subhanahu Wa Ta\'ala dan bertauhid',
+      'Mengenal Nabi Muhammad Shalallahu \'Alaihi Wassalam dan mampu mengikuti serta mengamalkan akhlak mulia beliau',
+      'Mampu melakukan wudhu dan shalat baik gerakkan maupun bacaan',
+      'Mampu belajar membaca Al-Qur\'an dengan baik dan benar',
+      'Memiliki hafalan 23 Surat dari Juz 30, 20 Hadits, dan 27 Do\'a sehari-hari',
+      'Memiliki kemandirian dan kepercayaan diri',
+      'Mampu membaca, menulis, dan berhitung',
+      'Berbahasa Indonesia yang baik dan benar, memiliki kosakata Bahasa Inggris dan Bahasa Arab serta mampu melakukan percakapan sesuai usianya'
+    ],
     akreditasi: 'A (Sangat Baik)',
     fasilitas: 'Ruang kelas full AC, area bermain luar (outdoor playground), ruang sensorik dalam, perpustakaan anak, sentra agama, kebun edukasi tanaman.',
-    whatsapp: '6281290008811',
-    namaNarahubung: 'Bunda Indri (CS Admin)',
-    alamat: 'Perumahan Taman Royal, Blok A-1, Tangerang, Banten',
-    mapsUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.5212680165996!2d106.66632617448293!3d-6.194741293792949!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69f9a456bf8f47%3A0xe54ef92c815942f6!2sTaman%20Royal!5e0!3m2!1sid!2sid!4v1722000000000!5m2!1sid!2sid',
+    whatsapp: '6281311994171',
+    whatsappFormatted: '0813-1199-4171',
+    namaNarahubung: 'CS Admin KB-TK',
+    alamat: 'Jl. Perikani I No.62, RT.7/RW.3, Cipinang, Kec. Pulo Gadung, Kota Jakarta Timur, Daerah Khusus Ibukota Jakarta 13240',
+    mapsUrl: 'https://maps.google.com/maps?q=Jl.+Perikani+I+No.62,+Cipinang,+Kec.+Pulo+Gadung,+Kota+Jakarta+Timur,+13240&t=&z=15&ie=UTF8&iwloc=&output=embed',
     imgUrl: 'https://images.unsplash.com/photo-1576267423445-b2e0074d68a4?q=80&w=600&auto=format&fit=crop'
   },
   {
     id: 'sd',
     name: 'SD Royal At-Tin Islamic School',
     shortName: 'SD Royal At-Tin',
-    visi: 'Mencetak ilmuwan Muslim masa depan yang bertauhid kokoh, unggul dalam sains dan teknologi, serta berjiwa kepemimpinan Qur\'ani.',
-    misi: 'Mengintegrasikan kurikulum nasional dengan muatan tahfidz (target 3 Juz), membudayakan pemikiran kritis dan riset ilmiah sederhana, serta membekali literasi digital sehat.',
+    visi: 'Menjadi pusat pendidikan dasar Islam berkualitas berlandaskan Al-Qur’an & As-Sunnah guna mempersiapkan generasi yang bertauhid, berilmu, dan berakhlak mulia.',
+    misi: [
+      'Menerapkan kurikulum dan pembelajaran berdasarkan Al-Qur’an & As-Sunnah',
+      'Menyiapkan lingkungan pembelajaran (fisik & non fisik) yang berkualitas untuk mendukung tahapan perkembangan peserta didik',
+      'Membangun kerjasama antara sekolah dengan peserta didik, orangtua dan masyarakat dalam mendukung kualitas pendidikan',
+      'Menumbuhkan karakter generasi muslim yang bertauhid, mandiri, percaya diri, sehat jasmani rohani, dan bermanfaat untuk kemaslahatan umat'
+    ],
+    tujuan: [
+      'Memiliki aqidah yang lurus, ibadah yang benar, dan akhlak yang mulia',
+      'Mampu membaca dan menghafal Al-Qur\'an dengan baik dan benar',
+      'Memiliki hafalan hadist dan do\'a pilihan',
+      'Mampu mengenal kosakata dan percakapan bahasa Arab sehari-hari',
+      'Mampu berbahasa Inggris secara aktif',
+      'Memiliki kemampuan berpikir kritis, kreatif, komunikatif, dan kolaboratif',
+      'Memiliki pola hidup bersih dan sehat',
+      'Memiliki ketrampilan hidup untuk dapat beradaptasi dengan perkembangan zaman',
+      'Memiliki ketrampilan literasi & numerasi yang baik sehingga menjadi pembelajar sepanjang hayat'
+    ],
     akreditasi: 'A (Unggul)',
     fasilitas: 'Laboratorium sains terpadu, laboratorium komputer ber-AC, masjid sekolah, lapangan basket & futsal, perpustakaan digital, kantin bersih.',
-    whatsapp: '6281290008822',
-    namaNarahubung: 'Ustadz Roni (Humas Akademik)',
-    alamat: 'Perumahan Taman Royal, Blok B-3, Tangerang, Banten',
-    mapsUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.5212680165996!2d106.66632617448293!3d-6.194741293792949!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69f9a456bf8f47%3A0xe54ef92c815942f6!2sTaman%20Royal!5e0!3m2!1sid!2sid!4v1722000000000!5m2!1sid!2sid',
+    whatsapp: '6281311994171',
+    whatsappFormatted: '0813-1199-4171',
+    namaNarahubung: 'CS Humas SD',
+    alamat: 'Jl. Persahabatan Raya No.13, RT.12/RW.18, Cipinang, Kec. Pulo Gadung, Kota Jakarta Timur, Daerah Khusus Ibukota Jakarta 13240',
+    mapsUrl: 'https://maps.google.com/maps?q=Jl.+Persahabatan+Raya+No.13,+Cipinang,+Kec.+Pulo+Gadung,+Kota+Jakarta+Timur,+13240&t=&z=15&ie=UTF8&iwloc=&output=embed',
     imgUrl: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=600&auto=format&fit=crop'
   },
   {
@@ -65,13 +100,23 @@ const UNIT_PROFILES = [
     name: 'NURA',
     shortName: 'NURA Tahfidz Center',
     visi: 'Menjadi pusat percontohan tahfidz Al-Qur\'an anak usia dini yang berkarakter mulia, mandiri, dan berwawasan global.',
-    misi: 'Membiasakan interaksi harian bersama Al-Qur\'an melalui metode tahsin yang menyenangkan, menanamkan kemandirian ibadah praktis, serta melatih percakapan bahasa Arab dasar.',
+    misi: [
+      'Membiasakan interaksi harian bersama Al-Qur\'an melalui metode tahsin yang menyenangkan',
+      'Menanamkan kemandirian ibadah praktis',
+      'Melatih percakapan bahasa Arab dasar'
+    ],
+    tujuan: [
+      'Membentuk generasi penghafal Al-Qur\'an yang mutqin dan beradab mulia',
+      'Menanamkan kecintaan terhadap Al-Qur\'an dan nilai-nilai Islam sejak usia dini',
+      'Membangun karakter anak yang mandiri, percaya diri, dan berakhlak karimah'
+    ],
     akreditasi: 'Terakreditasi Baik (B)',
     fasilitas: 'Gedung khusus asri full AC, ruang tahfidz karpet tebal, sensory indoor playground, kebun herbal (Kebun Qur\'an), pojok baca anak.',
-    whatsapp: '6281290008833',
-    namaNarahubung: 'Ustadzah Fatimah (Admin Pendaftaran)',
+    whatsapp: '6281311994171',
+    whatsappFormatted: '0813-1199-4171',
+    namaNarahubung: 'CS Pendaftaran NURA',
     alamat: 'Jalan Vila Nusa Indah Raya, Blok M-1, Gunung Putri, Bogor, Jawa Barat',
-    mapsUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3965.748530364966!2d106.96328227448375!3d-6.2967341936924845!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e698d9ab7df7bbf%3A0xc3f588a44ec2be84!2sVila%20Nusa%20Indah%202!5e0!3m2!1sid!2sid!4v1722000000000!5m2!1sid!2sid',
+    mapsUrl: 'https://maps.google.com/maps?q=Vila+Nusa+Indah+2,+Gunung+Putri,+Bogor&t=&z=15&ie=UTF8&iwloc=&output=embed',
     imgUrl: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?q=80&w=600&auto=format&fit=crop'
   }
 ];
@@ -553,10 +598,11 @@ export default function PpdbPage() {
                 <a
                   href={`https://wa.me/${profileSelectedUnit.whatsapp}`}
                   target="_blank"
+                  rel="noopener noreferrer"
                   className={styles.textBody}
                   style={{ color: 'var(--accent-color)', fontWeight: '700', textDecoration: 'none' }}
                 >
-                  +{profileSelectedUnit.whatsapp} ({profileSelectedUnit.namaNarahubung})
+                  {profileSelectedUnit.whatsappFormatted || `+${profileSelectedUnit.whatsapp}`} ({profileSelectedUnit.namaNarahubung})
                 </a>
               </div>
             </div>
@@ -567,9 +613,32 @@ export default function PpdbPage() {
             </div>
 
             <div className={styles.textSection}>
-              <div className={styles.sectionHeading}>🎯 Misi</div>
-              <p className={styles.textBody}>{profileSelectedUnit.misi}</p>
+              <div className={styles.sectionHeading}>📋 Misi</div>
+              {Array.isArray(profileSelectedUnit.misi) ? (
+                <ul style={{ paddingLeft: '20px', margin: '8px 0', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {profileSelectedUnit.misi.map((m, idx) => (
+                    <li key={idx} className={styles.textBody}>{m}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className={styles.textBody}>{profileSelectedUnit.misi}</p>
+              )}
             </div>
+
+            {profileSelectedUnit.tujuan && (
+              <div className={styles.textSection}>
+                <div className={styles.sectionHeading}>🎯 Tujuan</div>
+                {Array.isArray(profileSelectedUnit.tujuan) ? (
+                  <ul style={{ paddingLeft: '20px', margin: '8px 0', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {profileSelectedUnit.tujuan.map((t, idx) => (
+                      <li key={idx} className={styles.textBody}>{t}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className={styles.textBody}>{profileSelectedUnit.tujuan}</p>
+                )}
+              </div>
+            )}
 
             <div className={styles.textSection}>
               <div className={styles.sectionHeading}>🏫 Fasilitas Unggulan</div>
@@ -1742,8 +1811,9 @@ export default function PpdbPage() {
 
       {/* 📞 Tombol Bantuan WhatsApp Melayang (Fungsi Direction) */}
       <a
-        href="https://wa.me/6281290008811?text=Halo%20Admin%20Royal%20Attin,%20saya%20butuh%20bantuan%20terkait%20portal%20PPDB."
+        href="https://wa.me/6281311994171?text=Halo%20Admin%20Royal%20Attin,%20saya%20butuh%20bantuan%20terkait%20portal%20PPDB."
         target="_blank"
+        rel="noopener noreferrer"
         style={{
           position: 'fixed',
           bottom: '24px',

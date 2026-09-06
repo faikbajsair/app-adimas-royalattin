@@ -145,13 +145,13 @@ export default async function DashboardPage() {
     info = {
       name: 'KB-TK Royal Attin',
       sub_name: 'Islamic Character School',
-      address: 'Jalan Vila Nusa Indah Raya, Blok M-1, Gunung Putri, Bogor',
+      address: 'Jl. Perikani I No.62, RT.7/RW.3, Cipinang, Kec. Pulo Gadung, Jakarta Timur 13240',
       tagline: 'Membentuk Generasi Karakter Islami yang Cerdas & Berakhlak Mulia',
       logo_url: 'https://royalattin.sch.id/assets/img/logo-yayasan-only-removebg.png',
       youtube_url: 'https://youtube.com',
       instagram_url: 'https://instagram.com',
-      whatsapp_admin: '6281234567890',
-      maps_url: 'https://maps.google.com'
+      whatsapp_admin: '6281311994171',
+      maps_url: 'https://maps.google.com/maps?q=Jl.+Perikani+I+No.62,+Cipinang,+Kec.+Pulo+Gadung,+Kota+Jakarta+Timur,+13240&t=&z=15&ie=UTF8&iwloc=&output=embed'
     };
   }
 
