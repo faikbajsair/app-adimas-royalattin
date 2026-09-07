@@ -112,9 +112,9 @@ const UNIT_PROFILES = [
     ],
     akreditasi: 'Terakreditasi Baik (B)',
     fasilitas: 'Gedung khusus asri full AC, ruang tahfidz karpet tebal, sensory indoor playground, kebun herbal (Kebun Qur\'an), pojok baca anak.',
-    whatsapp: '6281311994171',
-    whatsappFormatted: '0813-1199-4171',
-    namaNarahubung: 'CS Pendaftaran NURA',
+    whatsapp: '6285697475357',
+    whatsappFormatted: '0856-9747-5357',
+    namaNarahubung: 'Admin Nura',
     alamat: 'Jalan Vila Nusa Indah Raya, Blok M-1, Gunung Putri, Bogor, Jawa Barat',
     mapsUrl: 'https://maps.google.com/maps?q=Vila+Nusa+Indah+2,+Gunung+Putri,+Bogor&t=&z=15&ie=UTF8&iwloc=&output=embed',
     imgUrl: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?q=80&w=600&auto=format&fit=crop'
