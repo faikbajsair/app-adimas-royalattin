@@ -575,7 +575,7 @@ export default function PpdbPage() {
         
         {guideOpen && (
           <div className="animate-fade-in" style={{ marginTop: '16px', borderTop: '1px solid var(--border-color)', paddingTop: '16px', fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+            <div className={styles.guideGrid}>
               <div>
                 <p style={{ marginBottom: '12px', color: 'var(--text-primary)' }}><strong>Langkah Awal Pendaftaran:</strong></p>
                 <ol style={{ paddingLeft: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -661,11 +661,11 @@ export default function PpdbPage() {
             <span className={styles.badgeUnit}>{profileSelectedUnit.akreditasi} Akreditasi</span>
             <h2 className={styles.profileTitle}>{profileSelectedUnit.name}</h2>
             
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+            <div className={styles.profileHeaderGrid}>
               <img
                 src={profileSelectedUnit.imgUrl}
                 alt="Foto Unit"
-                style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: 'var(--radius-sm)' }}
+                className={styles.profileUnitImage}
               />
               <div className={styles.textSection}>
                 <div className={styles.sectionHeading}>📍 Alamat Lengkap</div>
@@ -719,24 +719,9 @@ export default function PpdbPage() {
             <div className={styles.textSection}>
               <div className={styles.sectionHeading}>🏫 Fasilitas Unggulan</div>
               {Array.isArray(profileSelectedUnit.fasilitas) ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px', marginTop: '12px' }}>
+                <div className={styles.facilitiesGrid}>
                   {profileSelectedUnit.fasilitas.map((f, idx) => (
-                    <div
-                      key={idx}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        padding: '10px 14px',
-                        backgroundColor: 'var(--bg-secondary)',
-                        border: '1px solid var(--border-color)',
-                        borderRadius: 'var(--radius-sm)',
-                        fontSize: '0.88rem',
-                        fontWeight: 600,
-                        color: 'var(--text-primary)',
-                        transition: 'all 0.2s ease'
-                      }}
-                    >
+                    <div key={idx} className={styles.facilityCard}>
                       <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>{getFacilityIcon(f)}</span>
                       <span>{f}</span>
                     </div>
@@ -801,7 +786,7 @@ export default function PpdbPage() {
 
             <div className="form-group" style={{ marginBottom: '32px' }}>
               <label className="form-label" style={{ fontWeight: 700 }}>2. Tahun Ajaran Pendaftaran</label>
-              <div style={{ display: 'flex', gap: '12px' }}>
+              <div className={styles.yearOptionsFlex}>
                 {['2026/2027', '2027/2028'].map((ta) => (
                   <label
                     key={ta}
@@ -834,34 +819,32 @@ export default function PpdbPage() {
           {/* Sisa kuota visual display */}
           <div className="glass-panel" style={{ padding: '32px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             <div className={styles.quotaDisplay}>
-              <h3 style={{ fontSize: '1.15rem', marginBottom: '24px', fontWeight: 600 }}>Alokasi & Sisa Kuota Terbuka</h3>
-              
-              <div className={`${styles.quotaCircle} ${sisaKuota !== null && sisaKuota > 0 ? styles.quotaCircleActive : styles.quotaCircleEmpty}`}>
+              <div
+                className={`${styles.quotaCircle} ${
+                  sisaKuota !== null && sisaKuota > 0
+                    ? styles.quotaCircleActive
+                    : styles.quotaCircleEmpty
+                }`}
+              >
                 {quotaLoading ? (
-                  <span style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>Loading...</span>
+                  <div className={styles.spinner} />
                 ) : (
                   <>
-                    <span className={styles.quotaNumber} style={{ color: sisaKuota !== null && sisaKuota > 0 ? 'var(--accent-color)' : '#ef4444' }}>
-                      {sisaKuota}
+                    <span className={styles.quotaNumber}>
+                      {sisaKuota !== null ? sisaKuota : 0}
                     </span>
-                    <span className={styles.quotaNumLabel}>Sisa Tiket</span>
+                    <span className={styles.quotaNumLabel}>Kursi</span>
                   </>
                 )}
               </div>
-
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.5' }}>
-                {sisaKuota !== null && sisaKuota > 0 ? (
-                  <span>
-                    Kuota pendaftaran saat ini masih <strong>Tersedia</strong>. Silakan klik tombol <strong>"Lanjut Mengisi Formulir"</strong> untuk mengisi formulir pendaftaran siswa baru.
-                  </span>
-                ) : sisaKuota === 0 ? (
-                  <span style={{ color: '#ef4444', fontWeight: 600 }}>
-                    ⚠ Pendaftaran ditutup. Kuota pendaftaran untuk pilihan unit dan tahun ajaran tersebut telah habis / penuh.
-                  </span>
-                ) : (
-                  <span>Pilih Unit Lembaga & Tahun Ajaran di sebelah kiri untuk melihat sisa kuota murid baru.</span>
-                )}
-              </div>
+              <h4 style={{ fontSize: '1.1rem', fontWeight: 700, margin: '8px 0' }}>
+                Status Kuota Kelas
+              </h4>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '280px' }}>
+                {sisaKuota !== null && sisaKuota > 0
+                  ? 'Kuota masih terbuka. Segera lakukan pengisian berkas pendaftaran sebelum kuota penuh.'
+                  : 'Mohon maaf, kuota untuk jenjang dan tahun ajaran ini telah terisi penuh.'}
+              </p>
             </div>
           </div>
         </div>
@@ -909,7 +892,7 @@ export default function PpdbPage() {
             </button>
           </div>
 
-          <div className={`glass-panel`} style={{ padding: '40px', maxWidth: '800px', margin: '0 auto' }}>
+          <div className={`glass-panel ${styles.formCardPanel}`} style={{ maxWidth: '800px', margin: '0 auto' }}>
             {regSuccess ? (
               <div style={{ textAlign: 'center', padding: '24px' }}>
                 <span style={{ fontSize: '3rem', display: 'block', marginBottom: '16px' }}>🎉</span>
@@ -931,7 +914,7 @@ export default function PpdbPage() {
             ) : (
               <form id="ppdb-form" onSubmit={handleFormSubmit} encType="multipart/form-data">
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
+                <div className={styles.formRow3}>
                   <div className="form-group">
                     <label htmlFor="nama_anak" className="form-label">Nama Lengkap Anak</label>
                     <input type="text" id="nama_anak" name="nama_anak" className="form-input" required placeholder="Masukkan nama lengkap anak" />
@@ -948,7 +931,7 @@ export default function PpdbPage() {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '20px' }}>
+                <div className={styles.formRow2}>
                   <div className="form-group">
                     <label htmlFor="whatsapp" className="form-label">No. WhatsApp Orang Tua (Format: 628xxx)</label>
                     <input
@@ -971,7 +954,7 @@ export default function PpdbPage() {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '20px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
+                <div className={styles.formRow2Border}>
                     {(() => {
                       let brochureUrl = "/dummy/brosur_biaya.html";
                       if (schoolInfo) {
@@ -1159,7 +1142,7 @@ export default function PpdbPage() {
                 </div>
 
                 {/* Detail Data Anak */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px', backgroundColor: 'var(--bg-secondary)', padding: '16px', borderRadius: 'var(--radius-sm)', fontSize: '0.9rem' }}>
+                <div className={styles.trackerInfoGrid}>
                   <div>
                     <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Nama Murid</div>
                     <div style={{ fontWeight: 600 }}>{activeReg.nama_anak}</div>
@@ -1217,7 +1200,7 @@ export default function PpdbPage() {
                       return (
                         <>
                           {/* Keuangan Cards */}
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+                          <div className={styles.financialCardsGrid}>
                             <div className="glass-panel" style={{ padding: '16px', backgroundColor: 'var(--bg-primary)', borderLeft: '4px solid var(--accent-color)' }}>
                               <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Kewajiban Uang Pangkal</div>
                               <div style={{ fontSize: '1.2rem', fontWeight: 800, marginTop: '4px', color: 'var(--text-primary)' }}>

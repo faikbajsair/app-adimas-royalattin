@@ -66,12 +66,6 @@
   gap: 32px;
 }
 
-@media (max-width: 768px) {
-  .profileLayout {
-    grid-template-columns: 1fr;
-  }
-}
-
 .unitSidebar {
   display: flex;
   flex-direction: column;
@@ -114,6 +108,20 @@
   padding: 32px;
 }
 
+.profileHeaderGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.profileUnitImage {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+
 .profileTitle {
   font-size: 1.6rem;
   margin-bottom: 24px;
@@ -150,17 +158,32 @@
   line-height: 1.6;
 }
 
+.facilitiesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.facilityCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+}
+
 /* Tab 2: PPDB Wizard */
 .wizardGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 32px;
-}
-
-@media (max-width: 768px) {
-  .wizardGrid {
-    grid-template-columns: 1fr;
-  }
 }
 
 .quotaDisplay {
@@ -206,6 +229,10 @@
 }
 
 /* Tab 3: Formulir Pendaftaran */
+.formCardPanel {
+  padding: 32px;
+}
+
 .formLockedBanner {
   background-color: rgba(59, 130, 246, 0.05);
   border: 1px solid var(--border-color);
@@ -230,6 +257,39 @@
   font-weight: 700;
   font-size: 1rem;
   color: var(--text-primary);
+}
+
+.formRow3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.formRow2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.formRow2Border {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-top: 20px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 20px;
+}
+
+.guideGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.yearOptionsFlex {
+  display: flex;
+  gap: 12px;
 }
 
 /* Modals Overlay */
@@ -288,10 +348,22 @@
   gap: 32px;
 }
 
-@media (max-width: 850px) {
-  .trackerLayout {
-    grid-template-columns: 1fr;
-  }
+.trackerInfoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+  background-color: var(--bg-secondary);
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+}
+
+.financialCardsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
 }
 
 .statusStepper {
@@ -431,4 +503,130 @@
   animation: spin 1s linear infinite;
   display: block;
   margin: 0 auto;
+}
+
+/* ========================================================= */
+/* COMPREHENSIVE MOBILE & TABLET MEDIA QUERIES               */
+/* ========================================================= */
+@media (max-width: 850px) {
+  .trackerLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 14px;
+    margin: 16px auto 40px;
+  }
+
+  .title {
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+
+  .subtitle {
+    font-size: 0.85rem;
+    margin-bottom: 20px;
+  }
+
+  .tabsContainer {
+    gap: 6px;
+    padding: 6px;
+    margin-bottom: 24px;
+    border-radius: var(--radius-sm);
+  }
+
+  .tabBtn {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    flex: 1 1 calc(50% - 6px);
+    text-align: center;
+  }
+
+  .profileLayout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .profileContent {
+    padding: 20px 16px;
+  }
+
+  .profileHeaderGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .profileUnitImage {
+    height: 180px;
+  }
+
+  .wizardGrid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .formCardPanel {
+    padding: 20px 16px;
+  }
+
+  .formRow3 {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .formRow2,
+  .formRow2Border {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-top: 16px;
+  }
+
+  .formRow2Border {
+    padding-top: 16px;
+  }
+
+  .guideGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .facilitiesGrid {
+    grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+    gap: 8px;
+  }
+
+  .facilityCard {
+    padding: 8px 10px;
+    font-size: 0.8rem;
+    gap: 8px;
+  }
+
+  .trackerInfoGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .financialCardsGrid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .yearOptionsFlex {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .paymentChoiceGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin: 16px 0;
+  }
+
+  .modalCard {
+    padding: 24px 16px;
+  }
 }
