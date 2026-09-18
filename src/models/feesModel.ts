@@ -150,28 +150,28 @@ export class FeesModel extends BaseModel {
           nama_unit: 'NURA',
           tahun_ajaran: '2027/2028',
           metode_pembayaran: 'Cash',
-          uang_pendaftaran: '500000',
-          uang_pangkal: '4000000',
+          uang_pendaftaran: '0',
+          uang_pangkal: '0',
           sarpras: '0',
-          spp_juli: '400000',
-          uang_buku: '300000',
-          uang_seragam: '200000',
-          diskon: '400000',
-          total: '5000000'
+          spp_juli: '0',
+          uang_buku: '0',
+          uang_seragam: '0',
+          diskon: '0',
+          total: '0'
         },
         {
           id: '6',
           nama_unit: 'NURA',
           tahun_ajaran: '2027/2028',
           metode_pembayaran: 'Angsuran',
-          uang_pendaftaran: '500000',
-          uang_pangkal: '4000000',
+          uang_pendaftaran: '0',
+          uang_pangkal: '0',
           sarpras: '0',
-          spp_juli: '400000',
-          uang_buku: '300000',
-          uang_seragam: '200000',
+          spp_juli: '0',
+          uang_buku: '0',
+          uang_seragam: '0',
           diskon: '0',
-          total: '5400000'
+          total: '0'
         },
 
         // ================= T.A 2026/2027 =================

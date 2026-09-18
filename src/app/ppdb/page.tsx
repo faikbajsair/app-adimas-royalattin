@@ -26,7 +26,7 @@ function getObligationFee(unit: string, metode: string, tahunAjaran?: string): n
     if (isSd) {
       return isInstallment ? 46850000 : 44850000;
     } else if (isNura) {
-      return isInstallment ? 5400000 : 5000000;
+      return 0;
     } else if ((unit || '').toLowerCase().includes('tk')) {
       return isInstallment ? 40850000 : 38850000;
     } else {
@@ -38,7 +38,7 @@ function getObligationFee(unit: string, metode: string, tahunAjaran?: string): n
   if (isSd) {
     return isInstallment ? 9800000 : 9000000;
   } else if (isNura) {
-    return isInstallment ? 4900000 : 4500000;
+    return 0;
   } else {
     return isInstallment ? 6200000 : 5700000;
   }
@@ -981,7 +981,7 @@ export default function PpdbPage() {
                     <label htmlFor="bukti_bayar_file" className="form-label">Upload Bukti Transfer Pendaftaran (JPG, PNG, PDF)</label>
                     <input type="file" id="bukti_bayar_file" name="bukti_bayar_file" className="form-input" required accept="image/jpeg,image/png,application/pdf" style={{ padding: '8px' }} />
                     <small style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>
-                      *Hanya format JPG, PNG, PDF dengan ukuran maksimal 2MB. Silakan unggah berkas bukti transfer biaya pendaftaran ({selectedRegYear.includes('2027') ? (selectedRegUnit.toLowerCase().includes('sd') ? 'Rp 1.200.000' : selectedRegUnit.toLowerCase().includes('nura') ? 'Rp 500.000' : 'Rp 1.000.000') : 'Rp 250.000'}) langsung dari penyimpanan perangkat Anda.
+                      *Hanya format JPG, PNG, PDF dengan ukuran maksimal 2MB. Silakan unggah berkas bukti transfer biaya pendaftaran ({selectedRegYear.includes('2027') ? (selectedRegUnit.toLowerCase().includes('sd') ? 'Rp 1.200.000' : selectedRegUnit.toLowerCase().includes('nura') ? '-' : 'Rp 1.000.000') : 'Rp 250.000'}) langsung dari penyimpanan perangkat Anda.
                     </small>
                   </div>
                 </div>
