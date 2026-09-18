@@ -23,6 +23,18 @@ import {
 import { SchoolInfo } from '@/models/infoModel';
 import styles from '@/app/dashboard/page.module.css';
 
+function getRegistrationFee(unit: string, tahunAjaran?: string): number {
+  const isSd = (unit || '').toLowerCase().includes('sd');
+  const isNura = (unit || '').toLowerCase().includes('nura');
+  const isTa2027 = (tahunAjaran || '').includes('2027');
+
+  if (isNura) return 0;
+  if (isTa2027) {
+    return isSd ? 1200000 : 1000000;
+  }
+  return isSd ? 900000 : 850000;
+}
+
 function getObligationFee(unit: string, metode: string, tahunAjaran?: string): number {
   const isSd = (unit || '').toLowerCase().includes('sd');
   const isNura = (unit || '').toLowerCase().includes('nura');
@@ -33,7 +45,7 @@ function getObligationFee(unit: string, metode: string, tahunAjaran?: string): n
     if (isSd) {
       return isInstallment ? 46850000 : 44850000;
     } else if (isNura) {
-      return isInstallment ? 5400000 : 5000000;
+      return 0;
     } else if ((unit || '').toLowerCase().includes('tk')) {
       return isInstallment ? 40850000 : 38850000;
     } else {
@@ -41,13 +53,15 @@ function getObligationFee(unit: string, metode: string, tahunAjaran?: string): n
     }
   }
 
-  // TA 2026/2027 or default fallback
+  // TA 2026/2027
   if (isSd) {
-    return isInstallment ? 9800000 : 9000000;
+    return 35300000;
   } else if (isNura) {
-    return isInstallment ? 4900000 : 4500000;
+    return 0;
+  } else if ((unit || '').toLowerCase().includes('tk')) {
+    return 34400000;
   } else {
-    return isInstallment ? 6200000 : 5700000;
+    return 27500000;
   }
 }
 
@@ -2203,7 +2217,7 @@ export default function DashboardClient({
                                           <tbody>
                                             <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
                                               <td style={{ padding: '8px' }}>Pendaftaran (Formulir)</td>
-                                              <td style={{ padding: '8px' }}>{formatCurrency(250000)}</td>
+                                              <td style={{ padding: '8px' }}>{formatCurrency(getRegistrationFee(reg.nama_unit || '', reg.tahun_ajaran))}</td>
                                               <td style={{ padding: '8px' }}>
                                                 {reg.bukti_bayar_url ? (
                                                   <button 

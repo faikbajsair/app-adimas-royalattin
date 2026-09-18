@@ -16,6 +16,18 @@ import { PPDBRegistration } from '@/models/ppdbModel';
 import { generateQRISPayload } from '@/lib/qris';
 import styles from './ppdb.module.css';
 
+function getRegistrationFee(unit: string, tahunAjaran?: string): number {
+  const isSd = (unit || '').toLowerCase().includes('sd');
+  const isNura = (unit || '').toLowerCase().includes('nura');
+  const isTa2027 = (tahunAjaran || '').includes('2027');
+
+  if (isNura) return 0;
+  if (isTa2027) {
+    return isSd ? 1200000 : 1000000;
+  }
+  return isSd ? 900000 : 850000;
+}
+
 function getObligationFee(unit: string, metode: string, tahunAjaran?: string): number {
   const isSd = (unit || '').toLowerCase().includes('sd');
   const isNura = (unit || '').toLowerCase().includes('nura');
@@ -34,13 +46,15 @@ function getObligationFee(unit: string, metode: string, tahunAjaran?: string): n
     }
   }
 
-  // TA 2026/2027 or default fallback
+  // TA 2026/2027
   if (isSd) {
-    return isInstallment ? 9800000 : 9000000;
+    return 35300000;
   } else if (isNura) {
     return 0;
+  } else if ((unit || '').toLowerCase().includes('tk')) {
+    return 34400000;
   } else {
-    return isInstallment ? 6200000 : 5700000;
+    return 27500000;
   }
 }
 
@@ -981,7 +995,7 @@ export default function PpdbPage() {
                     <label htmlFor="bukti_bayar_file" className="form-label">Upload Bukti Transfer Pendaftaran (JPG, PNG, PDF)</label>
                     <input type="file" id="bukti_bayar_file" name="bukti_bayar_file" className="form-input" required accept="image/jpeg,image/png,application/pdf" style={{ padding: '8px' }} />
                     <small style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>
-                      *Hanya format JPG, PNG, PDF dengan ukuran maksimal 2MB. Silakan unggah berkas bukti transfer biaya pendaftaran ({selectedRegYear.includes('2027') ? (selectedRegUnit.toLowerCase().includes('sd') ? 'Rp 1.200.000' : selectedRegUnit.toLowerCase().includes('nura') ? '-' : 'Rp 1.000.000') : 'Rp 250.000'}) langsung dari penyimpanan perangkat Anda.
+                      *Hanya format JPG, PNG, PDF dengan ukuran maksimal 2MB. Silakan unggah berkas bukti transfer biaya pendaftaran ({selectedRegYear.includes('2027') ? (selectedRegUnit.toLowerCase().includes('sd') ? 'Rp 1.200.000' : selectedRegUnit.toLowerCase().includes('nura') ? '-' : 'Rp 1.000.000') : (selectedRegUnit.toLowerCase().includes('sd') ? 'Rp 900.000' : selectedRegUnit.toLowerCase().includes('nura') ? '-' : 'Rp 850.000')}) langsung dari penyimpanan perangkat Anda.
                     </small>
                   </div>
                 </div>
@@ -1233,7 +1247,7 @@ export default function PpdbPage() {
                               <tbody>
                                 <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
                                   <td style={{ padding: '8px' }}>Uang Formulir Pendaftaran</td>
-                                  <td style={{ padding: '8px' }}>{formatCurrency(250000)}</td>
+                                  <td style={{ padding: '8px' }}>{formatCurrency(getRegistrationFee(activeReg.nama_unit || '', activeReg.tahun_ajaran))}</td>
                                   <td style={{ padding: '8px' }}>
                                     <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', backgroundColor: 'rgba(34,197,94,0.1)', color: '#22c55e' }}>LUNAS</span>
                                   </td>
