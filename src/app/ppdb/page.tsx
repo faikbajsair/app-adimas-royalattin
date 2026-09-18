@@ -155,7 +155,7 @@ const UNIT_PROFILES = [
       'Menanamkan kecintaan terhadap Al-Qur\'an dan nilai-nilai Islam sejak usia dini',
       'Membangun karakter anak yang mandiri, percaya diri, dan berakhlak karimah'
     ],
-    fasilitas: SCHOOL_FACILITIES_LIST,
+    fasilitas: [] as string[],
     whatsapp: '6285697475357',
     whatsappFormatted: '0856-9747-5357',
     namaNarahubung: 'Admin Nura',
@@ -712,21 +712,23 @@ export default function PpdbPage() {
               </div>
             )}
 
-            <div className={styles.textSection}>
-              <div className={styles.sectionHeading}>🏫 Fasilitas Unggulan</div>
-              {Array.isArray(profileSelectedUnit.fasilitas) ? (
-                <div className={styles.facilitiesGrid}>
-                  {profileSelectedUnit.fasilitas.map((f, idx) => (
-                    <div key={idx} className={styles.facilityCard}>
-                      <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>{getFacilityIcon(f)}</span>
-                      <span>{f}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className={styles.textBody}>{profileSelectedUnit.fasilitas}</p>
-              )}
-            </div>
+            {profileSelectedUnit.fasilitas && (Array.isArray(profileSelectedUnit.fasilitas) ? profileSelectedUnit.fasilitas.length > 0 : Boolean(profileSelectedUnit.fasilitas)) && (
+              <div className={styles.textSection}>
+                <div className={styles.sectionHeading}>🏫 Fasilitas Unggulan</div>
+                {Array.isArray(profileSelectedUnit.fasilitas) ? (
+                  <div className={styles.facilitiesGrid}>
+                    {profileSelectedUnit.fasilitas.map((f, idx) => (
+                      <div key={idx} className={styles.facilityCard}>
+                        <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>{getFacilityIcon(f)}</span>
+                        <span>{f}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className={styles.textBody}>{profileSelectedUnit.fasilitas}</p>
+                )}
+              </div>
+            )}
 
             {/* Google Map */}
             <div style={{ marginTop: '24px', borderRadius: 'var(--radius-sm)', overflow: 'hidden', height: '240px', border: '1px solid var(--border-color)' }}>
