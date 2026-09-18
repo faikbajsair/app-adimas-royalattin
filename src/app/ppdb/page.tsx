@@ -102,7 +102,6 @@ const UNIT_PROFILES = [
       'Mampu membaca, menulis, dan berhitung',
       'Berbahasa Indonesia yang baik dan benar, memiliki kosakata Bahasa Inggris dan Bahasa Arab serta mampu melakukan percakapan sesuai usianya'
     ],
-    akreditasi: 'A (Sangat Baik)',
     fasilitas: SCHOOL_FACILITIES_LIST,
     whatsapp: '6281311994171',
     whatsappFormatted: '0813-1199-4171',
@@ -133,11 +132,10 @@ const UNIT_PROFILES = [
       'Memiliki ketrampilan hidup untuk dapat beradaptasi dengan perkembangan zaman',
       'Memiliki ketrampilan literasi & numerasi yang baik sehingga menjadi pembelajar sepanjang hayat'
     ],
-    akreditasi: 'A (Unggul)',
     fasilitas: SCHOOL_FACILITIES_LIST,
     whatsapp: '6281311994171',
     whatsappFormatted: '0813-1199-4171',
-    namaNarahubung: 'CS Humas SD',
+    namaNarahubung: 'CS Admin SD',
     alamat: 'Jl. Persahabatan Raya No.13, RT.12/RW.18, Cipinang, Kec. Pulo Gadung, Kota Jakarta Timur, Daerah Khusus Ibukota Jakarta 13240',
     mapsUrl: 'https://maps.google.com/maps?q=Jl.+Persahabatan+Raya+No.13,+Cipinang,+Kec.+Pulo+Gadung,+Kota+Jakarta+Timur,+13240&t=&z=15&ie=UTF8&iwloc=&output=embed',
     imgUrl: '/images/jenjang_sd.jpg'
@@ -157,7 +155,6 @@ const UNIT_PROFILES = [
       'Menanamkan kecintaan terhadap Al-Qur\'an dan nilai-nilai Islam sejak usia dini',
       'Membangun karakter anak yang mandiri, percaya diri, dan berakhlak karimah'
     ],
-    akreditasi: 'Terakreditasi Baik (B)',
     fasilitas: SCHOOL_FACILITIES_LIST,
     whatsapp: '6285697475357',
     whatsappFormatted: '0856-9747-5357',
@@ -658,7 +655,6 @@ export default function PpdbPage() {
 
           {/* Profil details */}
           <div className={`glass-panel ${styles.profileContent}`}>
-            <span className={styles.badgeUnit}>{profileSelectedUnit.akreditasi} Akreditasi</span>
             <h2 className={styles.profileTitle}>{profileSelectedUnit.name}</h2>
             
             <div className={styles.profileHeaderGrid}>
