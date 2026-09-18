@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       return new NextResponse('Berkas bukti transfer belum diunggah untuk pendaftaran ini.', { status: 404 });
     }
 
-    // Jika disimpan sebagai Base64 Data URL
+    // 1. Jika disimpan sebagai Base64 Data URL
     if (proofUrl.startsWith('data:')) {
       const commaIdx = proofUrl.indexOf(',');
       if (commaIdx !== -1) {
@@ -51,7 +51,52 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Jika URL berupa Google Drive atau path lokal /uploads/
+    // 2. Jika URL adalah Google Drive
+    const driveMatch = proofUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || proofUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (driveMatch && driveMatch[1]) {
+      const fileId = driveMatch[1];
+      
+      // Coba ambil stream gambar langsung dari Google Direct CDN (lh3.googleusercontent.com)
+      try {
+        const cdnUrl = `https://lh3.googleusercontent.com/d/${fileId}`;
+        const cdnRes = await fetch(cdnUrl, { redirect: 'follow' });
+        
+        if (cdnRes.ok) {
+          const contentType = cdnRes.headers.get('content-type') || 'image/jpeg';
+          if (!contentType.includes('text/html')) {
+            const arrayBuf = await cdnRes.arrayBuffer();
+            return new NextResponse(Buffer.from(arrayBuf), {
+              status: 200,
+              headers: {
+                'Content-Type': contentType,
+                'Content-Disposition': `inline; filename="bukti_${reg.no_pendaftaran || fileId}.${contentType.includes('pdf') ? 'pdf' : 'jpg'}"`,
+                'Cache-Control': 'public, max-age=86400, stale-while-revalidate=43200',
+              },
+            });
+          }
+        }
+
+        // Jika CDN mengembalikan HTML (misalnya PDF), coba via Google Drive Direct Export
+        const exportUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+        const exportRes = await fetch(exportUrl, { redirect: 'follow' });
+        if (exportRes.ok) {
+          const contentType = exportRes.headers.get('content-type') || 'image/jpeg';
+          const arrayBuf = await exportRes.arrayBuffer();
+          return new NextResponse(Buffer.from(arrayBuf), {
+            status: 200,
+            headers: {
+              'Content-Type': contentType,
+              'Content-Disposition': `inline; filename="bukti_${reg.no_pendaftaran || fileId}.${contentType.includes('pdf') ? 'pdf' : 'jpg'}"`,
+              'Cache-Control': 'public, max-age=86400, stale-while-revalidate=43200',
+            },
+          });
+        }
+      } catch (streamErr) {
+        console.warn('Gagal streaming Google Drive langsung, fallback ke redirect:', streamErr);
+      }
+    }
+
+    // 3. Fallback jika URL berupa external URL atau path lokal
     return NextResponse.redirect(new URL(proofUrl, request.url));
   } catch (error: any) {
     console.error('Error serving proof file in /api/bukti:', error);

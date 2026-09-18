@@ -23,11 +23,25 @@ import {
 import { SchoolInfo } from '@/models/infoModel';
 import styles from '@/app/dashboard/page.module.css';
 
-function getObligationFee(unit: string, metode: string): number {
+function getObligationFee(unit: string, metode: string, tahunAjaran?: string): number {
   const isSd = (unit || '').toLowerCase().includes('sd');
   const isNura = (unit || '').toLowerCase().includes('nura');
   const isInstallment = metode === 'Angsuran';
-  
+  const isTa2027 = (tahunAjaran || '').includes('2027');
+
+  if (isTa2027) {
+    if (isSd) {
+      return isInstallment ? 46850000 : 44850000;
+    } else if (isNura) {
+      return isInstallment ? 5400000 : 5000000;
+    } else if ((unit || '').toLowerCase().includes('tk')) {
+      return isInstallment ? 40850000 : 38850000;
+    } else {
+      return isInstallment ? 33950000 : 31950000;
+    }
+  }
+
+  // TA 2026/2027 or default fallback
   if (isSd) {
     return isInstallment ? 9800000 : 9000000;
   } else if (isNura) {
@@ -57,7 +71,7 @@ function calculatePayments(reg: any) {
     'Selesai'
   ];
   
-  const totalKewajiban = getObligationFee(reg.nama_unit || '', reg.metode_pembayaran);
+  const totalKewajiban = getObligationFee(reg.nama_unit || '', reg.metode_pembayaran, reg.tahun_ajaran);
   let totalTerbayar = 0;
   
   if (reg.metode_pembayaran === 'Cash') {

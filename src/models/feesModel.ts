@@ -5,7 +5,9 @@ export interface FeeConfig {
   nama_unit: string;
   tahun_ajaran: string;
   metode_pembayaran: 'Cash' | 'Angsuran';
+  uang_pendaftaran?: number;
   uang_pangkal: number;
+  sarpras?: number;
   spp_juli: number;
   uang_buku: number;
   uang_seragam: number;
@@ -20,7 +22,9 @@ export class FeesModel extends BaseModel {
     'Nama Unit',
     'Tahun Ajaran',
     'Metode Pembayaran',
+    'Uang Pendaftaran',
     'Uang Pangkal',
+    'Sarpras',
     'SPP Juli',
     'Uang Buku',
     'Uang Seragam',
@@ -36,11 +40,25 @@ export class FeesModel extends BaseModel {
   async getFee(unit: string, ta: string, metode: 'Cash' | 'Angsuran'): Promise<FeeConfig | null> {
     await this.ensureSheetExists(FeesModel.HEADERS);
     const all = await this.getAll();
-    const match = all.find(
-      f => f.nama_unit?.trim().toLowerCase() === unit.trim().toLowerCase() &&
-           f.tahun_ajaran?.trim() === ta.trim() &&
-           f.metode_pembayaran?.trim().toLowerCase() === metode.trim().toLowerCase()
-    );
+    const uLower = (unit || '').trim().toLowerCase();
+    const mLower = (metode || '').trim().toLowerCase();
+    const tClean = (ta || '').trim();
+
+    // Matching exact or fuzzy unit name
+    const match = all.find(f => {
+      const fUnit = (f.nama_unit || '').trim().toLowerCase();
+      const fMetode = (f.metode_pembayaran || '').trim().toLowerCase();
+      const fTa = (f.tahun_ajaran || '').trim();
+
+      const taMatch = fTa === tClean;
+      const metodeMatch = fMetode === mLower;
+      const unitMatch = fUnit === uLower || 
+        (uLower.includes('sd') && fUnit.includes('sd')) ||
+        (uLower.includes('nura') && fUnit.includes('nura')) ||
+        ((uLower.includes('kb') || uLower.includes('tk') || uLower.includes('taman main')) && (fUnit.includes('kb') || fUnit.includes('tk') || fUnit.includes('taman main')));
+
+      return taMatch && metodeMatch && unitMatch;
+    });
 
     if (!match) return null;
 
@@ -49,7 +67,9 @@ export class FeesModel extends BaseModel {
       nama_unit: match.nama_unit,
       tahun_ajaran: match.tahun_ajaran,
       metode_pembayaran: match.metode_pembayaran as any,
+      uang_pendaftaran: Number(match.uang_pendaftaran || 0),
       uang_pangkal: Number(match.uang_pangkal || 0),
+      sarpras: Number(match.sarpras || 0),
       spp_juli: Number(match.spp_juli || 0),
       uang_buku: Number(match.uang_buku || 0),
       uang_seragam: Number(match.uang_seragam || 0),
@@ -65,12 +85,104 @@ export class FeesModel extends BaseModel {
     const all = await this.getAll();
     if (all.length === 0) {
       const sampleFees = [
+        // ================= T.A 2027/2028 (Harga Baru Sesuai Brosur Resmi) =================
+        // 1. KB & TK (Kelompok Bermain / Taman Kanak-Kanak) - KB-A & KB-B
         {
           id: '1',
           nama_unit: 'KB & TK Taman Main Royal At-Tin',
+          tahun_ajaran: '2027/2028',
+          metode_pembayaran: 'Cash',
+          uang_pendaftaran: '1000000',
+          uang_pangkal: '23000000',
+          sarpras: '4500000',
+          spp_juli: '1600000',
+          uang_buku: '0',
+          uang_seragam: '1850000',
+          diskon: '2000000',
+          total: '31950000'
+        },
+        {
+          id: '2',
+          nama_unit: 'KB & TK Taman Main Royal At-Tin',
+          tahun_ajaran: '2027/2028',
+          metode_pembayaran: 'Angsuran',
+          uang_pendaftaran: '1000000',
+          uang_pangkal: '25000000',
+          sarpras: '4500000',
+          spp_juli: '1600000',
+          uang_buku: '0',
+          uang_seragam: '1850000',
+          diskon: '0',
+          total: '33950000'
+        },
+        // 2. SD Royal At-Tin Islamic School (2027/2028)
+        {
+          id: '3',
+          nama_unit: 'SD Royal At-Tin Islamic School',
+          tahun_ajaran: '2027/2028',
+          metode_pembayaran: 'Cash',
+          uang_pendaftaran: '1200000',
+          uang_pangkal: '33000000',
+          sarpras: '6500000',
+          spp_juli: '1850000',
+          uang_buku: '0',
+          uang_seragam: '2300000',
+          diskon: '2000000',
+          total: '44850000'
+        },
+        {
+          id: '4',
+          nama_unit: 'SD Royal At-Tin Islamic School',
+          tahun_ajaran: '2027/2028',
+          metode_pembayaran: 'Angsuran',
+          uang_pendaftaran: '1200000',
+          uang_pangkal: '35000000',
+          sarpras: '6500000',
+          spp_juli: '1850000',
+          uang_buku: '0',
+          uang_seragam: '2300000',
+          diskon: '0',
+          total: '46850000'
+        },
+        // 3. NURA Tahfidz Center (2027/2028)
+        {
+          id: '5',
+          nama_unit: 'NURA',
+          tahun_ajaran: '2027/2028',
+          metode_pembayaran: 'Cash',
+          uang_pendaftaran: '500000',
+          uang_pangkal: '4000000',
+          sarpras: '0',
+          spp_juli: '400000',
+          uang_buku: '300000',
+          uang_seragam: '200000',
+          diskon: '400000',
+          total: '5000000'
+        },
+        {
+          id: '6',
+          nama_unit: 'NURA',
+          tahun_ajaran: '2027/2028',
+          metode_pembayaran: 'Angsuran',
+          uang_pendaftaran: '500000',
+          uang_pangkal: '4000000',
+          sarpras: '0',
+          spp_juli: '400000',
+          uang_buku: '300000',
+          uang_seragam: '200000',
+          diskon: '0',
+          total: '5400000'
+        },
+
+        // ================= T.A 2026/2027 =================
+        {
+          id: '7',
+          nama_unit: 'KB & TK Taman Main Royal At-Tin',
           tahun_ajaran: '2026/2027',
           metode_pembayaran: 'Cash',
+          uang_pendaftaran: '250000',
           uang_pangkal: '5000000',
+          sarpras: '0',
           spp_juli: '500000',
           uang_buku: '400000',
           uang_seragam: '300000',
@@ -78,11 +190,13 @@ export class FeesModel extends BaseModel {
           total: '5700000'
         },
         {
-          id: '2',
+          id: '8',
           nama_unit: 'KB & TK Taman Main Royal At-Tin',
           tahun_ajaran: '2026/2027',
           metode_pembayaran: 'Angsuran',
+          uang_pendaftaran: '250000',
           uang_pangkal: '5000000',
+          sarpras: '0',
           spp_juli: '500000',
           uang_buku: '400000',
           uang_seragam: '300000',
@@ -90,11 +204,13 @@ export class FeesModel extends BaseModel {
           total: '6200000'
         },
         {
-          id: '3',
+          id: '9',
           nama_unit: 'SD Royal At-Tin Islamic School',
           tahun_ajaran: '2026/2027',
           metode_pembayaran: 'Cash',
+          uang_pendaftaran: '250000',
           uang_pangkal: '8000000',
+          sarpras: '0',
           spp_juli: '800000',
           uang_buku: '600000',
           uang_seragam: '400000',
@@ -102,11 +218,13 @@ export class FeesModel extends BaseModel {
           total: '9000000'
         },
         {
-          id: '4',
+          id: '10',
           nama_unit: 'SD Royal At-Tin Islamic School',
           tahun_ajaran: '2026/2027',
           metode_pembayaran: 'Angsuran',
+          uang_pendaftaran: '250000',
           uang_pangkal: '8000000',
+          sarpras: '0',
           spp_juli: '800000',
           uang_buku: '600000',
           uang_seragam: '400000',
@@ -114,11 +232,13 @@ export class FeesModel extends BaseModel {
           total: '9800000'
         },
         {
-          id: '5',
+          id: '11',
           nama_unit: 'NURA',
           tahun_ajaran: '2026/2027',
           metode_pembayaran: 'Cash',
+          uang_pendaftaran: '250000',
           uang_pangkal: '4000000',
+          sarpras: '0',
           spp_juli: '400000',
           uang_buku: '300000',
           uang_seragam: '200000',
@@ -126,11 +246,13 @@ export class FeesModel extends BaseModel {
           total: '4500000'
         },
         {
-          id: '6',
+          id: '12',
           nama_unit: 'NURA',
           tahun_ajaran: '2026/2027',
           metode_pembayaran: 'Angsuran',
+          uang_pendaftaran: '250000',
           uang_pangkal: '4000000',
+          sarpras: '0',
           spp_juli: '400000',
           uang_buku: '300000',
           uang_seragam: '200000',

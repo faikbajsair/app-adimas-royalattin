@@ -16,11 +16,25 @@ import { PPDBRegistration } from '@/models/ppdbModel';
 import { generateQRISPayload } from '@/lib/qris';
 import styles from './ppdb.module.css';
 
-function getObligationFee(unit: string, metode: string): number {
+function getObligationFee(unit: string, metode: string, tahunAjaran?: string): number {
   const isSd = (unit || '').toLowerCase().includes('sd');
   const isNura = (unit || '').toLowerCase().includes('nura');
   const isInstallment = metode === 'Angsuran';
-  
+  const isTa2027 = (tahunAjaran || '').includes('2027');
+
+  if (isTa2027) {
+    if (isSd) {
+      return isInstallment ? 46850000 : 44850000;
+    } else if (isNura) {
+      return isInstallment ? 5400000 : 5000000;
+    } else if ((unit || '').toLowerCase().includes('tk')) {
+      return isInstallment ? 40850000 : 38850000;
+    } else {
+      return isInstallment ? 33950000 : 31950000;
+    }
+  }
+
+  // TA 2026/2027 or default fallback
   if (isSd) {
     return isInstallment ? 9800000 : 9000000;
   } else if (isNura) {
@@ -29,6 +43,39 @@ function getObligationFee(unit: string, metode: string): number {
     return isInstallment ? 6200000 : 5700000;
   }
 }
+
+function getFacilityIcon(name: string): string {
+  const n = name.toLowerCase();
+  if (n.includes('montessori')) return '🧩';
+  if (n.includes('swimming') || n.includes('pool') || n.includes('renang')) return '🏊‍♂️';
+  if (n.includes('garden') || n.includes('kebun') || n.includes('taman')) return '🌱';
+  if (n.includes('field') || n.includes('lapangan')) return '⚽';
+  if (n.includes('library') || n.includes('perpustakaan')) return '📚';
+  if (n.includes('outdoor') || n.includes('play') || n.includes('bermain')) return '🛝';
+  if (n.includes('ac') || n.includes('classroom') || n.includes('kelas')) return '❄️';
+  if (n.includes('cctv')) return '📹';
+  if (n.includes('canteen') || n.includes('kantin')) return '🏪';
+  if (n.includes('health') || n.includes('medical') || n.includes('uks')) return '🩺';
+  if (n.includes('smartboard') || n.includes('tv')) return '📺';
+  if (n.includes('kitchen') || n.includes('dapur')) return '🍳';
+  return '🏫';
+}
+
+// Fasilitas Unggulan Sekolah (Sesuai Brosur Resmi)
+const SCHOOL_FACILITIES_LIST = [
+  'Montessori Area',
+  'Swimming Pool',
+  'Mini Garden',
+  'Mini Field',
+  'Mini Library',
+  'Outdoor Play Area',
+  'Classroom with AC',
+  'CCTV All Areas',
+  'Honesty Canteen',
+  'Health & Medical Room',
+  'Smartboard TV',
+  'Kitchen Room'
+];
 
 // Data Profil Unit Sekolah Static
 const UNIT_PROFILES = [
@@ -56,13 +103,13 @@ const UNIT_PROFILES = [
       'Berbahasa Indonesia yang baik dan benar, memiliki kosakata Bahasa Inggris dan Bahasa Arab serta mampu melakukan percakapan sesuai usianya'
     ],
     akreditasi: 'A (Sangat Baik)',
-    fasilitas: 'Ruang kelas full AC, area bermain luar (outdoor playground), ruang sensorik dalam, perpustakaan anak, sentra agama, kebun edukasi tanaman.',
+    fasilitas: SCHOOL_FACILITIES_LIST,
     whatsapp: '6281311994171',
     whatsappFormatted: '0813-1199-4171',
     namaNarahubung: 'CS Admin KB-TK',
     alamat: 'Jl. Perikani I No.62, RT.7/RW.3, Cipinang, Kec. Pulo Gadung, Kota Jakarta Timur, Daerah Khusus Ibukota Jakarta 13240',
     mapsUrl: 'https://maps.google.com/maps?q=Jl.+Perikani+I+No.62,+Cipinang,+Kec.+Pulo+Gadung,+Kota+Jakarta+Timur,+13240&t=&z=15&ie=UTF8&iwloc=&output=embed',
-    imgUrl: 'https://images.unsplash.com/photo-1576267423445-b2e0074d68a4?q=80&w=600&auto=format&fit=crop'
+    imgUrl: '/images/jenjang_kbtk.jpg'
   },
   {
     id: 'sd',
@@ -87,13 +134,13 @@ const UNIT_PROFILES = [
       'Memiliki ketrampilan literasi & numerasi yang baik sehingga menjadi pembelajar sepanjang hayat'
     ],
     akreditasi: 'A (Unggul)',
-    fasilitas: 'Laboratorium sains terpadu, laboratorium komputer ber-AC, masjid sekolah, lapangan basket & futsal, perpustakaan digital, kantin bersih.',
+    fasilitas: SCHOOL_FACILITIES_LIST,
     whatsapp: '6281311994171',
     whatsappFormatted: '0813-1199-4171',
     namaNarahubung: 'CS Humas SD',
     alamat: 'Jl. Persahabatan Raya No.13, RT.12/RW.18, Cipinang, Kec. Pulo Gadung, Kota Jakarta Timur, Daerah Khusus Ibukota Jakarta 13240',
     mapsUrl: 'https://maps.google.com/maps?q=Jl.+Persahabatan+Raya+No.13,+Cipinang,+Kec.+Pulo+Gadung,+Kota+Jakarta+Timur,+13240&t=&z=15&ie=UTF8&iwloc=&output=embed',
-    imgUrl: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=600&auto=format&fit=crop'
+    imgUrl: '/images/jenjang_sd.jpg'
   },
   {
     id: 'nura',
@@ -111,13 +158,13 @@ const UNIT_PROFILES = [
       'Membangun karakter anak yang mandiri, percaya diri, dan berakhlak karimah'
     ],
     akreditasi: 'Terakreditasi Baik (B)',
-    fasilitas: 'Gedung khusus asri full AC, ruang tahfidz karpet tebal, sensory indoor playground, kebun herbal (Kebun Qur\'an), pojok baca anak.',
+    fasilitas: SCHOOL_FACILITIES_LIST,
     whatsapp: '6285697475357',
     whatsappFormatted: '0856-9747-5357',
     namaNarahubung: 'Admin Nura',
     alamat: 'Jalan Vila Nusa Indah Raya, Blok M-1, Gunung Putri, Bogor, Jawa Barat',
     mapsUrl: 'https://maps.google.com/maps?q=Vila+Nusa+Indah+2,+Gunung+Putri,+Bogor&t=&z=15&ie=UTF8&iwloc=&output=embed',
-    imgUrl: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?q=80&w=600&auto=format&fit=crop'
+    imgUrl: '/images/jenjang_nura.jpg'
   }
 ];
 
@@ -671,7 +718,33 @@ export default function PpdbPage() {
 
             <div className={styles.textSection}>
               <div className={styles.sectionHeading}>🏫 Fasilitas Unggulan</div>
-              <p className={styles.textBody}>{profileSelectedUnit.fasilitas}</p>
+              {Array.isArray(profileSelectedUnit.fasilitas) ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px', marginTop: '12px' }}>
+                  {profileSelectedUnit.fasilitas.map((f, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        padding: '10px 14px',
+                        backgroundColor: 'var(--bg-secondary)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: 'var(--radius-sm)',
+                        fontSize: '0.88rem',
+                        fontWeight: 600,
+                        color: 'var(--text-primary)',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>{getFacilityIcon(f)}</span>
+                      <span>{f}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className={styles.textBody}>{profileSelectedUnit.fasilitas}</p>
+              )}
             </div>
 
             {/* Google Map */}
@@ -927,7 +1000,7 @@ export default function PpdbPage() {
                     <label htmlFor="bukti_bayar_file" className="form-label">Upload Bukti Transfer Pendaftaran (JPG, PNG, PDF)</label>
                     <input type="file" id="bukti_bayar_file" name="bukti_bayar_file" className="form-input" required accept="image/jpeg,image/png,application/pdf" style={{ padding: '8px' }} />
                     <small style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>
-                      *Hanya format JPG, PNG, PDF dengan ukuran maksimal 2MB. Silakan unggah berkas bukti transfer biaya pendaftaran Rp 250.000 langsung dari penyimpanan perangkat Anda.
+                      *Hanya format JPG, PNG, PDF dengan ukuran maksimal 2MB. Silakan unggah berkas bukti transfer biaya pendaftaran ({selectedRegYear.includes('2027') ? (selectedRegUnit.toLowerCase().includes('sd') ? 'Rp 1.200.000' : selectedRegUnit.toLowerCase().includes('nura') ? 'Rp 500.000' : 'Rp 1.000.000') : 'Rp 250.000'}) langsung dari penyimpanan perangkat Anda.
                     </small>
                   </div>
                 </div>
@@ -1113,7 +1186,7 @@ export default function PpdbPage() {
                     </h4>
                     
                     {(() => {
-                      const totalKewajiban = schoolFees ? schoolFees.total : getObligationFee(activeReg.nama_unit || '', activeReg.metode_pembayaran || '');
+                      const totalKewajiban = schoolFees ? schoolFees.total : getObligationFee(activeReg.nama_unit || '', activeReg.metode_pembayaran || '', activeReg.tahun_ajaran);
                       let totalTerbayar = 0;
                       
                       if (activeReg.metode_pembayaran === 'Cash') {
@@ -1467,7 +1540,7 @@ export default function PpdbPage() {
 
                 {/* PANEL STATUS 6: PROSES PEMBAYARAN FULL PAYMENT */}
                 {activeReg.status === 'Menunggu Pembayaran Full Payment' && (() => {
-                  const totalKewajiban = schoolFees ? schoolFees.total : getObligationFee(activeReg.nama_unit || '', activeReg.metode_pembayaran || '');
+                  const totalKewajiban = schoolFees ? schoolFees.total : getObligationFee(activeReg.nama_unit || '', activeReg.metode_pembayaran || '', activeReg.tahun_ajaran);
                   const formatCurrency = (val: number) => {
                     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
                   };
@@ -1509,7 +1582,7 @@ export default function PpdbPage() {
 
                 {/* PANEL STATUS 7: PROSES PEMBAYARAN ANGSURAN (ANGSURAN 1 / 2 / 3) */}
                 {['Menunggu Pembayaran Angsuran 1', 'Menunggu Pembayaran Angsuran 2', 'Menunggu Pembayaran Angsuran 3'].includes(activeReg.status) && (() => {
-                  const totalKewajiban = schoolFees ? schoolFees.total : getObligationFee(activeReg.nama_unit || '', activeReg.metode_pembayaran || '');
+                  const totalKewajiban = schoolFees ? schoolFees.total : getObligationFee(activeReg.nama_unit || '', activeReg.metode_pembayaran || '', activeReg.tahun_ajaran);
                   const formatCurrency = (val: number) => {
                     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
                   };
