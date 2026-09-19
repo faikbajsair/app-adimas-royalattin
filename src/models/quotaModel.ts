@@ -42,7 +42,13 @@ export class QuotaModel extends BaseModel {
       terisi = match ? Number(match.kuota_terisi || 0) : 0;
     }
 
-    const total = match ? Number(match.kuota_total || 50) : 50;
+    const isTa2027 = (ta || '').includes('2027');
+    const uLower = (unit || '').toLowerCase();
+    const defaultTotal = isTa2027
+      ? (uLower.includes('nura') ? 30 : 32)
+      : (uLower.includes('nura') ? 30 : 32);
+
+    const total = match ? Number(match.kuota_total || defaultTotal) : defaultTotal;
 
     return {
       total,
@@ -67,12 +73,15 @@ export class QuotaModel extends BaseModel {
       await this.update(Number(match._rowNum), updated, QuotaModel.HEADERS);
     } else {
       // Jika tidak di-config sebelumnya, masukkan baris baru
+      const isTa2027 = (ta || '').includes('2027');
+      const uLower = (unit || '').toLowerCase();
+      const defaultTotal = isTa2027 ? (uLower.includes('nura') ? '30' : '32') : '32';
       const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
       await this.insert({
         id,
         nama_unit: unit.trim(),
         tahun_ajaran: ta.trim(),
-        kuota_total: '50',
+        kuota_total: defaultTotal,
         kuota_terisi: '1'
       }, QuotaModel.HEADERS);
     }
@@ -93,17 +102,9 @@ export class QuotaModel extends BaseModel {
       let idCounter = 1;
       for (const u of units) {
         for (const ta of tas) {
-          // Setting salah satu kuota menjadi penuh (0 sisa) untuk testing
-          let total = 40;
-          let terisi = 10;
-          
-          if (u === 'SD Royal At-Tin Islamic School' && ta === '2027/2028') {
-            total = 50;
-            terisi = 50; // Sisa 0!
-          } else if (u === 'NURA' && ta === '2026/2027') {
-            total = 30;
-            terisi = 29; // Sisa 1!
-          }
+          const uLower = u.toLowerCase();
+          const total = uLower.includes('nura') ? 30 : 32;
+          const terisi = 0;
 
           await this.insert({
             id: String(idCounter++),

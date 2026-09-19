@@ -1646,13 +1646,15 @@ export default function DashboardClient({
             }).length;
           };
 
-          const getUnitQuotaTotal = (unitName: string, ta: string) => {
+          const getUnitQuotaTotal = (unitName: string, ta: string): number => {
             const match = quotas.find(
               (q: any) =>
                 (q.nama_unit || '').trim().toLowerCase() === unitName.trim().toLowerCase() &&
                 (q.tahun_ajaran || '').trim() === ta.trim()
             );
-            return match ? Number(match.kuota_total || 50) : 50;
+            const uLower = unitName.toLowerCase();
+            const defaultTotal = uLower.includes('nura') ? 30 : 32;
+            return match ? Number(match.kuota_total || defaultTotal) : defaultTotal;
           };
 
           const count1 = getUnitRegistrantCount('KB & TK Taman Main Royal At-Tin', selectedReportYear);
@@ -1896,6 +1898,28 @@ export default function DashboardClient({
                           <span>{pct}% Terisi</span>
                           <span>{sisa} Kursi Tersisa</span>
                         </div>
+
+                        {/* Breakdown Kuota Kelas */}
+                        {unit.id === 'kbtk' && (
+                          <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px dashed var(--border-color)', fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                            <span>🌸 KB-A: <strong>7</strong></span>
+                            <span>•</span>
+                            <span>🧸 KB-B: <strong>5</strong></span>
+                            <span>•</span>
+                            <span>🎨 TK-A: <strong>13</strong></span>
+                            <span>•</span>
+                            <span>🎓 TK-B: <strong>7</strong></span>
+                          </div>
+                        )}
+                        {unit.id === 'sd' && (
+                          <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px dashed var(--border-color)', fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                            <span>📚 Kelas 1: <strong>12</strong></span>
+                            <span>•</span>
+                            <span>🎒 Kelas 2: <strong>9</strong></span>
+                            <span>•</span>
+                            <span>✏️ Kelas 3: <strong>11</strong></span>
+                          </div>
+                        )}
                       </div>
                     );
                   })}

@@ -91,6 +91,21 @@ const SCHOOL_FACILITIES_LIST = [
   'Kitchen Room'
 ];
 
+// Rincian Alokasi Kuota Kelas (Resmi 2027/2028: KB-TK = 32, SD = 32)
+const CLASS_QUOTAS_DETAIL: Record<string, { label: string; quota: number; icon: string; desc?: string }[]> = {
+  kbtk: [
+    { label: 'KB-A', quota: 7, icon: '🌸', desc: 'Usia 2 Th' },
+    { label: 'KB-B', quota: 5, icon: '🧸', desc: 'Usia 3 Th' },
+    { label: 'TK-A', quota: 13, icon: '🎨', desc: 'Usia 4 Th' },
+    { label: 'TK-B', quota: 7, icon: '🎓', desc: 'Usia 5 Th' }
+  ],
+  sd: [
+    { label: 'Kelas 1', quota: 12, icon: '📚', desc: 'Usia 6 Th' },
+    { label: 'Kelas 2', quota: 9, icon: '🎒', desc: 'Siswa Baru/Pindahan' },
+    { label: 'Kelas 3', quota: 11, icon: '✏️', desc: 'Siswa Baru/Pindahan' }
+  ]
+};
+
 // Data Profil Unit Sekolah Static
 const UNIT_PROFILES = [
   {
@@ -829,7 +844,7 @@ export default function PpdbPage() {
           </div>
 
           {/* Sisa kuota visual display */}
-          <div className="glass-panel" style={{ padding: '32px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <div className="glass-panel" style={{ padding: '32px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
             <div className={styles.quotaDisplay}>
               <div
                 className={`${styles.quotaCircle} ${
@@ -845,19 +860,52 @@ export default function PpdbPage() {
                     <span className={styles.quotaNumber}>
                       {sisaKuota !== null ? sisaKuota : 0}
                     </span>
-                    <span className={styles.quotaNumLabel}>Kursi</span>
+                    <span className={styles.quotaNumLabel}>Kursi Tersedia</span>
                   </>
                 )}
               </div>
               <h4 style={{ fontSize: '1.1rem', fontWeight: 700, margin: '8px 0' }}>
                 Status Kuota Kelas
               </h4>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '280px' }}>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '300px', textAlign: 'center' }}>
                 {sisaKuota !== null && sisaKuota > 0
-                  ? 'Kuota masih terbuka. Segera lakukan pengisian berkas pendaftaran sebelum kuota penuh.'
+                  ? `Daya tampung total ${ppdbUnit.toLowerCase().includes('nura') ? '30' : '32'} murid. Segera lakukan pengisian berkas pendaftaran sebelum kuota penuh.`
                   : 'Mohon maaf, kuota untuk jenjang dan tahun ajaran ini telah terisi penuh.'}
               </p>
             </div>
+
+            {/* Rincian Alokasi Kuota per Kelas */}
+            {(() => {
+              const uLower = (ppdbUnit || '').toLowerCase();
+              const isKbtk = uLower.includes('kb') || uLower.includes('tk') || uLower.includes('taman main');
+              const isSd = uLower.includes('sd') || uLower.includes('royal');
+              const list = isKbtk ? CLASS_QUOTAS_DETAIL.kbtk : isSd ? CLASS_QUOTAS_DETAIL.sd : null;
+
+              if (!list) return null;
+
+              return (
+                <div style={{ marginTop: '20px', width: '100%', maxWidth: '360px', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', padding: '16px', border: '1px solid var(--border-color)' }}>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    <span>📊</span> Rincian Kuota Kelas (Total 32 Murid)
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: isKbtk ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '10px' }}>
+                    {list.map((item, idx) => (
+                      <div key={idx} style={{ background: 'var(--bg-primary)', padding: '10px 8px', borderRadius: '8px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                          <span>{item.icon}</span> <span>{item.label}</span>
+                        </div>
+                        <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--accent-color)', margin: '4px 0 2px 0' }}>
+                          {item.quota} <span style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Murid</span>
+                        </div>
+                        {item.desc && (
+                          <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>{item.desc}</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
