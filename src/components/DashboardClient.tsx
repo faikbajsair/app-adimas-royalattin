@@ -875,9 +875,12 @@ export default function DashboardClient({
           {['admin', 'admin_kbtk', 'admin_sd', 'admin_nura', 'yayasan'].includes(user.role) && (() => {
             const matchesUnit = (namaUnit: string, targetId: 'kbtk' | 'sd' | 'nura') => {
               const name = (namaUnit || '').toLowerCase();
-              if (targetId === 'kbtk') return name.includes('kb') || name.includes('tk') || name.includes('taman main');
-              if (targetId === 'sd') return name.includes('sd') || name.includes('at-tin islamic') || name.includes('royal at-tin');
-              if (targetId === 'nura') return name === 'nura' || name.includes('nura');
+              const isKbtk = name.includes('kb') || name.includes('tk') || name.includes('taman main');
+              const isSd = !isKbtk && (name.includes('sd') || name.includes('islamic school') || name.includes('at-tin islamic'));
+              const isNura = name.includes('nura') || name.includes('tahfidz');
+              if (targetId === 'kbtk') return isKbtk;
+              if (targetId === 'sd') return isSd;
+              if (targetId === 'nura') return isNura;
               return false;
             };
             const unverifiedCount = localRegistrants.filter((reg: any) => {
@@ -991,9 +994,12 @@ export default function DashboardClient({
             {['admin', 'admin_kbtk', 'admin_sd', 'admin_nura', 'yayasan'].includes(user.role) && (() => {
               const matchesUnit = (namaUnit: string, targetId: 'kbtk' | 'sd' | 'nura') => {
                 const name = (namaUnit || '').toLowerCase();
-                if (targetId === 'kbtk') return name.includes('kb') || name.includes('tk') || name.includes('taman main');
-                if (targetId === 'sd') return name.includes('sd') || name.includes('at-tin islamic') || name.includes('royal at-tin');
-                if (targetId === 'nura') return name === 'nura' || name.includes('nura');
+                const isKbtk = name.includes('kb') || name.includes('tk') || name.includes('taman main');
+                const isSd = !isKbtk && (name.includes('sd') || name.includes('islamic school') || name.includes('at-tin islamic'));
+                const isNura = name.includes('nura') || name.includes('tahfidz');
+                if (targetId === 'kbtk') return isKbtk;
+                if (targetId === 'sd') return isSd;
+                if (targetId === 'nura') return isNura;
                 return false;
               };
 
@@ -1033,9 +1039,9 @@ export default function DashboardClient({
                         gap: '12px'
                       }}>
                         <div>
-                          <strong style={{ fontSize: '0.95rem', display: 'block', color: 'var(--text-primary)' }}>{reg.nama_anak}</strong>
+                          <strong style={{ fontSize: '0.95rem', display: 'block', color: 'var(--text-primary)' }}>{reg.nama_anak} {reg.pilihan_kelas ? `(${reg.pilihan_kelas})` : ''}</strong>
                           <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginTop: '2px' }}>
-                            🏫 {reg.nama_unit} ({reg.tahun_ajaran}) | 👤 Orang Tua: {reg.nama_orang_tua}
+                            🏫 {reg.nama_unit} {reg.pilihan_kelas ? `• Kelas ${reg.pilihan_kelas}` : ''} ({reg.tahun_ajaran}) | 👤 Orang Tua: {reg.nama_orang_tua}
                           </span>
                         </div>
                         <button
@@ -1629,18 +1635,19 @@ export default function DashboardClient({
           // Helper pencocokan unit
           function matchesUnit(namaUnit: string, targetId: 'kbtk' | 'sd' | 'nura') {
             const name = (namaUnit || '').toLowerCase();
-            if (targetId === 'kbtk') return name.includes('kb') || name.includes('tk') || name.includes('taman main');
-            if (targetId === 'sd') return name.includes('sd') || name.includes('at-tin islamic') || name.includes('royal at-tin');
-            if (targetId === 'nura') return name === 'nura' || name.includes('nura');
+            const isKbtk = name.includes('kb') || name.includes('tk') || name.includes('taman main');
+            const isSd = !isKbtk && (name.includes('sd') || name.includes('islamic school') || name.includes('at-tin islamic'));
+            const isNura = name.includes('nura') || name.includes('tahfidz');
+            if (targetId === 'kbtk') return isKbtk;
+            if (targetId === 'sd') return isSd;
+            if (targetId === 'nura') return isNura;
             return false;
           }
 
           // Hitung data untuk Laporan Quota PPDB secara dinamis
-          const getUnitRegistrantCount = (unitName: string, ta: string) => {
+          const getUnitRegistrantCount = (unitId: 'kbtk' | 'sd' | 'nura', ta: string) => {
             return localRegistrants.filter((reg: any) => {
-              const regUnit = (reg.nama_unit || '').trim().toLowerCase();
-              const targetUnit = unitName.trim().toLowerCase();
-              const matchesU = regUnit === targetUnit || regUnit.includes(targetUnit) || targetUnit.includes(regUnit);
+              const matchesU = matchesUnit(reg.nama_unit, unitId);
               const matchesTa = (reg.tahun_ajaran || '').trim() === ta.trim();
               return matchesU && matchesTa;
             }).length;
@@ -1657,13 +1664,13 @@ export default function DashboardClient({
             return match ? Number(match.kuota_total || defaultTotal) : defaultTotal;
           };
 
-          const count1 = getUnitRegistrantCount('KB & TK Taman Main Royal At-Tin', selectedReportYear);
+          const count1 = getUnitRegistrantCount('kbtk', selectedReportYear);
           const quota1 = getUnitQuotaTotal('KB & TK Taman Main Royal At-Tin', selectedReportYear);
 
-          const count2 = getUnitRegistrantCount('SD Royal At-Tin Islamic School', selectedReportYear);
+          const count2 = getUnitRegistrantCount('sd', selectedReportYear);
           const quota2 = getUnitQuotaTotal('SD Royal At-Tin Islamic School', selectedReportYear);
 
-          const count3 = getUnitRegistrantCount('NURA', selectedReportYear);
+          const count3 = getUnitRegistrantCount('nura', selectedReportYear);
           const quota3 = getUnitQuotaTotal('NURA', selectedReportYear);
 
           const maxVal = Math.max(50, count1, quota1, count2, quota2, count3, quota3);
@@ -2049,7 +2056,7 @@ export default function DashboardClient({
                             </td>
                             <td style={{ padding: '16px 12px' }}>
                               <strong>{reg.nama_anak}</strong> <br/>
-                              <small style={{ color: 'var(--text-secondary)' }}>Unit: {reg.nama_unit} | TA: {reg.tahun_ajaran}</small>
+                              <small style={{ color: 'var(--text-secondary)' }}>Unit: {reg.nama_unit} {reg.pilihan_kelas ? `(${reg.pilihan_kelas})` : ''} | TA: {reg.tahun_ajaran}</small>
                             </td>
                             <td style={{ padding: '16px 12px' }}>{reg.nama_orang_tua} <br/> <small style={{ color: 'var(--accent-color)' }}>+{reg.whatsapp}</small></td>
                             <td style={{ padding: '16px 12px' }}>
@@ -2179,6 +2186,10 @@ export default function DashboardClient({
                                     <div>
                                       <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Alamat Rumah:</div>
                                       <div style={{ fontWeight: 600, marginTop: '2px', color: 'var(--text-primary)' }}>{reg.alamat_rumah || '-'}</div>
+                                    </div>
+                                    <div>
+                                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Pilihan Kelas Tujuan:</div>
+                                      <div style={{ fontWeight: 600, marginTop: '2px', color: 'var(--accent-color)' }}>{reg.pilihan_kelas || '-'}</div>
                                     </div>
                                     <div>
                                       <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Tanggal Lahir Anak:</div>

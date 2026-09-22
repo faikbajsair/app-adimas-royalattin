@@ -156,6 +156,7 @@ export async function saveUploadedFile(file: any, maxSizeMb: number = 5, subfold
 
 const ppdbSchema = z.object({
   nama_unit: z.string().min(1, 'Nama unit harus dipilih'),
+  pilihan_kelas: z.string().min(1, 'Pilihan kelas wajib dipilih'),
   tahun_ajaran: z.string().min(1, 'Tahun ajaran harus dipilih'),
   nama_anak: z.string().min(2, 'Nama anak minimal 2 karakter'),
   nama_orang_tua: z.string().min(2, 'Nama orang tua minimal 2 karakter'),
@@ -184,13 +185,17 @@ export async function getQuotaAction(unit: string, ta: string) {
 // Helper function to map unit to admin email
 function getAdminEmailForUnit(namaUnit: string): string {
   const name = (namaUnit || '').toLowerCase();
-  if (name.includes('kb') || name.includes('tk') || name.includes('taman main')) {
+  const isKbtk = name.includes('kb') || name.includes('tk') || name.includes('taman main');
+  const isSd = !isKbtk && (name.includes('sd') || name.includes('islamic school') || name.includes('at-tin islamic'));
+  const isNura = name.includes('nura') || name.includes('tahfidz');
+
+  if (isKbtk) {
     return 'tmroyalattin@gmail.com';
   }
-  if (name.includes('sd') || name.includes('at-tin islamic') || name.includes('royal at-tin')) {
+  if (isSd) {
     return 'sdroyalattin@gmail.com';
   }
-  if (name.includes('nura')) {
+  if (isNura) {
     return 'nuratahfidzcentre@gmail.com';
   }
   return 'tmroyalattin@gmail.com';
@@ -199,6 +204,7 @@ function getAdminEmailForUnit(namaUnit: string): string {
 // Action mendaftar PPDB baru
 export async function submitPpdbRegistrationAction(prevState: any, formData: FormData) {
   const nama_unit = formData.get('nama_unit') as string;
+  const pilihan_kelas = (formData.get('pilihan_kelas') as string) || '';
   const tahun_ajaran = formData.get('tahun_ajaran') as string;
   const nama_anak = formData.get('nama_anak') as string;
   const nama_orang_tua = formData.get('nama_orang_tua') as string;
@@ -226,6 +232,7 @@ export async function submitPpdbRegistrationAction(prevState: any, formData: For
     // Susun isi pesan notifikasi ke Telegram dengan HTML parse mode
     const caption = `🔔 <b>PENDAFTARAN PPDB BARU</b> 🔔\n\n` +
       `👤 <b>Nama Anak:</b> ${nama_anak}\n` +
+      `🎒 <b>Pilihan Kelas:</b> ${pilihan_kelas}\n` +
       `📅 <b>Tanggal Lahir:</b> ${tanggal_lahir}\n` +
       `👥 <b>Orang Tua/Wali:</b> ${nama_orang_tua}\n` +
       `📱 <b>WhatsApp:</b> ${whatsapp}\n` +
@@ -242,7 +249,7 @@ export async function submitPpdbRegistrationAction(prevState: any, formData: For
     try {
       const adminEmail = getAdminEmailForUnit(nama_unit);
       const yayasanEmail = 'tamanattinrawamangun@gmail.com';
-      const emailSubject = `[PPDB Baru] Pendaftaran Siswa Baru - ${nama_anak} (${nama_unit})`;
+      const emailSubject = `[PPDB Baru] Pendaftaran Siswa Baru - ${nama_anak} (${nama_unit} - ${pilihan_kelas})`;
       const emailHtml = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #f9f9f9;">
           <div style="text-align: center; border-bottom: 2px solid #3b82f6; padding-bottom: 15px; margin-bottom: 20px;">
@@ -260,6 +267,10 @@ export async function submitPpdbRegistrationAction(prevState: any, formData: For
               <tr>
                 <td style="padding: 6px 0; font-weight: bold; width: 35%; vertical-align: top;">Nama Anak:</td>
                 <td style="padding: 6px 0; vertical-align: top;">${nama_anak}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; font-weight: bold; vertical-align: top;">Pilihan Kelas:</td>
+                <td style="padding: 6px 0; vertical-align: top; color: #1e3a8a; font-weight: bold;">${pilihan_kelas}</td>
               </tr>
               <tr>
                 <td style="padding: 6px 0; font-weight: bold; vertical-align: top;">Tanggal Lahir:</td>
@@ -323,6 +334,7 @@ export async function submitPpdbRegistrationAction(prevState: any, formData: For
 
   const validation = ppdbSchema.safeParse({
     nama_unit,
+    pilihan_kelas,
     tahun_ajaran,
     nama_anak,
     nama_orang_tua,
@@ -346,6 +358,7 @@ export async function submitPpdbRegistrationAction(prevState: any, formData: For
     const ppdbModel = new PpdbModel();
     const noPendaftaran = await ppdbModel.createRegistration({
       nama_unit,
+      pilihan_kelas,
       tahun_ajaran,
       nama_anak,
       nama_orang_tua,
@@ -497,14 +510,18 @@ function isAuthorizedForPpdbUnit(userRole: string, namaUnit: string): boolean {
     return true;
   }
   const name = (namaUnit || '').toLowerCase();
+  const isKbtk = name.includes('kb') || name.includes('tk') || name.includes('taman main');
+  const isSd = !isKbtk && (name.includes('sd') || name.includes('islamic school') || name.includes('at-tin islamic'));
+  const isNura = name.includes('nura') || name.includes('tahfidz');
+
   if (userRole === 'admin_kbtk') {
-    return name.includes('kb') || name.includes('tk') || name.includes('taman main');
+    return isKbtk;
   }
   if (userRole === 'admin_sd') {
-    return name.includes('sd') || name.includes('at-tin islamic') || name.includes('royal at-tin');
+    return isSd;
   }
   if (userRole === 'admin_nura') {
-    return name === 'nura' || name.includes('nura');
+    return isNura;
   }
   return false;
 }

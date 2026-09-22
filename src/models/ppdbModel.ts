@@ -4,6 +4,7 @@ export interface PPDBRegistration {
   id: string;
   no_pendaftaran: string;
   nama_unit: string;
+  pilihan_kelas: string; // Pilihan kelas tujuan (KB-A, KB-B, TK-A, TK-B atau Kelas 1-3)
   tahun_ajaran: string;
   nama_anak: string;
   nama_orang_tua: string;
@@ -82,7 +83,8 @@ export class PpdbModel extends BaseModel {
     'Siswa Password',
     'Tanggal Lahir',
     'Waktu Psikotest',
-    'Catatan Psikotest'
+    'Catatan Psikotest',
+    'Pilihan Kelas'
   ];
 
   constructor() {
@@ -92,6 +94,7 @@ export class PpdbModel extends BaseModel {
   // Membuat pendaftaran baru (Formulir Pendaftaran)
   async createRegistration(data: {
     nama_unit: string;
+    pilihan_kelas: string;
     tahun_ajaran: string;
     nama_anak: string;
     nama_orang_tua: string;
@@ -152,6 +155,7 @@ export class PpdbModel extends BaseModel {
       id,
       no_pendaftaran: noPendaftaran,
       nama_unit: data.nama_unit,
+      pilihan_kelas: data.pilihan_kelas || '',
       tahun_ajaran: data.tahun_ajaran,
       nama_anak: data.nama_anak.trim(),
       nama_orang_tua: data.nama_orang_tua.trim(),
@@ -219,6 +223,7 @@ export class PpdbModel extends BaseModel {
       id: raw.id,
       no_pendaftaran: raw.no_pendaftaran,
       nama_unit: raw.nama_unit,
+      pilihan_kelas: raw.pilihan_kelas || '',
       tahun_ajaran: raw.tahun_ajaran,
       nama_anak: raw.nama_anak,
       nama_orang_tua: raw.nama_orang_tua,

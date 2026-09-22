@@ -878,7 +878,7 @@ export default function PpdbPage() {
             {(() => {
               const uLower = (ppdbUnit || '').toLowerCase();
               const isKbtk = uLower.includes('kb') || uLower.includes('tk') || uLower.includes('taman main');
-              const isSd = uLower.includes('sd') || uLower.includes('royal');
+              const isSd = !isKbtk && (uLower.includes('sd') || uLower.includes('islamic school'));
               const list = isKbtk ? CLASS_QUOTAS_DETAIL.kbtk : isSd ? CLASS_QUOTAS_DETAIL.sd : null;
 
               if (!list) return null;
@@ -986,12 +986,49 @@ export default function PpdbPage() {
                   </div>
 
                   <div className="form-group">
-                    <label htmlFor="nama_orang_tua" className="form-label">Nama Orang Tua / Wali</label>
-                    <input type="text" id="nama_orang_tua" name="nama_orang_tua" className="form-input" required placeholder="Masukkan nama orang tua / wali" />
+                    <label htmlFor="pilihan_kelas" className="form-label">Ingin Mendaftar Kelas</label>
+                    <select id="pilihan_kelas" name="pilihan_kelas" className="form-input" required defaultValue="">
+                      <option value="" disabled>-- Pilih Kelas Tujuan --</option>
+                      {(() => {
+                        const uLower = (selectedRegUnit || '').toLowerCase();
+                        const isKbtk = uLower.includes('kb') || uLower.includes('tk') || uLower.includes('taman main');
+                        const isSd = !isKbtk && (uLower.includes('sd') || uLower.includes('islamic school'));
+                        if (isKbtk) {
+                          return (
+                            <>
+                              <option value="KB-A">🌸 KB-A (Usia 2 Th)</option>
+                              <option value="KB-B">🧸 KB-B (Usia 3 Th)</option>
+                              <option value="TK-A">🎨 TK-A (Usia 4 Th)</option>
+                              <option value="TK-B">🎓 TK-B (Usia 5 Th)</option>
+                            </>
+                          );
+                        } else if (isSd) {
+                          return (
+                            <>
+                              <option value="Kelas 1">📚 Kelas 1 (Usia 6 Th)</option>
+                              <option value="Kelas 2">🎒 Kelas 2 (Siswa Baru / Pindahan)</option>
+                              <option value="Kelas 3">✏️ Kelas 3 (Siswa Baru / Pindahan)</option>
+                            </>
+                          );
+                        } else {
+                          return (
+                            <>
+                              <option value="Program Tahfidz">📖 Program Tahfidz Anak</option>
+                              <option value="Reguler">🌟 Reguler</option>
+                            </>
+                          );
+                        }
+                      })()}
+                    </select>
                   </div>
                 </div>
 
-                <div className={styles.formRow2}>
+                <div className={styles.formRow3}>
+                  <div className="form-group">
+                    <label htmlFor="nama_orang_tua" className="form-label">Nama Orang Tua / Wali</label>
+                    <input type="text" id="nama_orang_tua" name="nama_orang_tua" className="form-input" required placeholder="Masukkan nama orang tua / wali" />
+                  </div>
+
                   <div className="form-group">
                     <label htmlFor="whatsapp" className="form-label">No. WhatsApp Orang Tua (Format: 628xxx)</label>
                     <input
@@ -1019,9 +1056,11 @@ export default function PpdbPage() {
                       let brochureUrl = "/dummy/brosur_biaya.html";
                       if (schoolInfo) {
                         const unitLower = (selectedRegUnit || '').toLowerCase();
-                        if (unitLower.includes('tk') || unitLower.includes('taman main')) {
+                        const isKbtk = unitLower.includes('kb') || unitLower.includes('tk') || unitLower.includes('taman main');
+                        const isSd = !isKbtk && (unitLower.includes('sd') || unitLower.includes('islamic school'));
+                        if (isKbtk) {
                           brochureUrl = schoolInfo.brochure_kbtk || brochureUrl;
-                        } else if (unitLower.includes('sd') || unitLower.includes('royal')) {
+                        } else if (isSd) {
                           brochureUrl = schoolInfo.brochure_sd || brochureUrl;
                         } else if (unitLower.includes('nura')) {
                           brochureUrl = schoolInfo.brochure_nura || brochureUrl;
@@ -1195,8 +1234,11 @@ export default function PpdbPage() {
                 <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', marginBottom: '24px' }}>
                   <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 700 }}>Nomor Pendaftaran</span>
                   <h3 style={{ fontSize: '1.5rem', fontWeight: 800, margin: '4px 0 8px 0' }}>{activeReg.no_pendaftaran}</h3>
-                  <div style={{ display: 'flex', gap: '16px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                     <span>🏫 Unit: <strong>{activeReg.nama_unit}</strong></span>
+                    {activeReg.pilihan_kelas && (
+                      <span>🎒 Kelas Tujuan: <strong style={{ color: 'var(--accent-color)' }}>{activeReg.pilihan_kelas}</strong></span>
+                    )}
                     <span>📅 TA: <strong>{activeReg.tahun_ajaran}</strong></span>
                   </div>
                 </div>
@@ -1206,6 +1248,14 @@ export default function PpdbPage() {
                   <div>
                     <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Nama Murid</div>
                     <div style={{ fontWeight: 600 }}>{activeReg.nama_anak}</div>
+                  </div>
+                  <div>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Pilihan Kelas</div>
+                    <div style={{ fontWeight: 600, color: 'var(--accent-color)' }}>{activeReg.pilihan_kelas || '-'}</div>
+                  </div>
+                  <div>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Tanggal Lahir</div>
+                    <div style={{ fontWeight: 600 }}>{activeReg.tanggal_lahir || '-'}</div>
                   </div>
                   <div>
                     <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Nama Wali</div>
