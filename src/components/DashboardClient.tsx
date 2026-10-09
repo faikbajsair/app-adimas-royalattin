@@ -10,7 +10,7 @@ import {
   saveSectionItemAction,
   deleteSectionItemAction
 } from '@/actions/landingActions';
-import { verifyPpdbPaymentAction, updatePpdbStatusByAdminAction } from '@/actions/ppdbActions';
+import { verifyPpdbPaymentAction, updatePpdbStatusByAdminAction, reschedulePpdbPsychotestAction } from '@/actions/ppdbActions';
 import { createEventAction } from '@/actions/eventActions';
 import {
   recordStudentAttendanceAction,
@@ -191,7 +191,105 @@ export default function DashboardClient({
     return 'all';
   };
   const [selectedUnitFilter, setSelectedUnitFilter] = useState<'all' | 'kbtk' | 'sd' | 'nura'>(getInitialFilter());
-  const [selectedReportYear, setSelectedReportYear] = useState<string>('2026/2027');
+  const [selectedReportYear, setSelectedReportYear] = useState<string>('all');
+  const [ppdbSubSection, setPpdbSubSection] = useState<'pendaftar' | 'jadwal_psikotes'>('pendaftar');
+  const [psychotestFilter, setPsychotestFilter] = useState<'all' | 'unassigned' | 'scheduled' | 'finished'>('all');
+  const [psychotestSearch, setPsychotestSearch] = useState<string>('');
+
+  // State Modal Reschedule Psikotes
+  const [rescheduleModal, setRescheduleModal] = useState<{
+    isOpen: boolean;
+    reg: any | null;
+    tanggal: string;
+    waktu: string;
+    lokasi: string;
+    catatan: string;
+    alasan: string;
+    loading: boolean;
+  }>({
+    isOpen: false,
+    reg: null,
+    tanggal: '',
+    waktu: '08:00 WIB',
+    lokasi: 'Ruang Observasi Utama',
+    catatan: '',
+    alasan: '',
+    loading: false
+  });
+
+  // State Modal History Schedule Psikotes
+  const [historyModal, setHistoryModal] = useState<{
+    isOpen: boolean;
+    reg: any | null;
+    history: any[];
+  }>({
+    isOpen: false,
+    reg: null,
+    history: []
+  });
+
+  const openRescheduleModal = (reg: any) => {
+    setRescheduleModal({
+      isOpen: true,
+      reg,
+      tanggal: reg.tanggal_psikotest || '2026-08-15',
+      waktu: reg.waktu_psikotest || '08:00 WIB',
+      lokasi: reg.lokasi_psikotest || 'Ruang Observasi Utama',
+      catatan: reg.catatan_psikotest || '',
+      alasan: '',
+      loading: false
+    });
+  };
+
+  const openHistoryModal = (reg: any) => {
+    let history: any[] = [];
+    try {
+      if (reg.history_jadwal_psikotest) {
+        history = JSON.parse(reg.history_jadwal_psikotest);
+        if (!Array.isArray(history)) history = [];
+      }
+    } catch (e) {
+      history = [];
+    }
+    setHistoryModal({
+      isOpen: true,
+      reg,
+      history
+    });
+  };
+
+  async function handleRescheduleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!rescheduleModal.reg) return;
+
+    if (!rescheduleModal.tanggal) {
+      showAlert('Peringatan', 'Tanggal pelaksanaan psikotes wajib diisi.', 'error');
+      return;
+    }
+
+    setRescheduleModal(prev => ({ ...prev, loading: true }));
+    try {
+      const res = await reschedulePpdbPsychotestAction(rescheduleModal.reg.id, {
+        tanggal_psikotest: rescheduleModal.tanggal,
+        waktu_psikotest: rescheduleModal.waktu,
+        lokasi_psikotest: rescheduleModal.lokasi,
+        catatan_psikotest: rescheduleModal.catatan,
+        alasan_reschedule: rescheduleModal.alasan || 'Penyesuaian jadwal oleh admin unit'
+      });
+
+      if (res.error) {
+        showAlert('Gagal Reschedule', res.error, 'error');
+      } else {
+        showAlert('Berhasil', 'Jadwal psikotes berhasil diperbarui & dicatat ke riwayat!', 'success');
+        setRescheduleModal(prev => ({ ...prev, isOpen: false }));
+        router.refresh();
+      }
+    } catch (err: any) {
+      showAlert('Error', 'Gagal memproses perubahan jadwal: ' + err.message, 'error');
+    } finally {
+      setRescheduleModal(prev => ({ ...prev, loading: false }));
+    }
+  }
 
   // Loading & State
   const [logoutLoading, setLogoutLoading] = useState(false);
@@ -1644,11 +1742,21 @@ export default function DashboardClient({
             return false;
           }
 
+          // Kumpulan pilihan tahun ajaran dinamis dari data
+          const uniqueYears = Array.from(new Set<string>([
+            '2026/2027',
+            '2027/2028',
+            ...localRegistrants.map((r: any) => (r.tahun_ajaran || '').trim()).filter(Boolean),
+            ...quotas.map((q: any) => (q.tahun_ajaran || '').trim()).filter(Boolean)
+          ])).sort();
+
+          const chartYear = selectedReportYear === 'all' ? '2026/2027' : selectedReportYear;
+
           // Hitung data untuk Laporan Quota PPDB secara dinamis
           const getUnitRegistrantCount = (unitId: 'kbtk' | 'sd' | 'nura', ta: string) => {
             return localRegistrants.filter((reg: any) => {
               const matchesU = matchesUnit(reg.nama_unit, unitId);
-              const matchesTa = (reg.tahun_ajaran || '').trim() === ta.trim();
+              const matchesTa = selectedReportYear === 'all' ? true : (reg.tahun_ajaran || '').trim() === ta.trim();
               return matchesU && matchesTa;
             }).length;
           };
@@ -1664,14 +1772,14 @@ export default function DashboardClient({
             return match ? Number(match.kuota_total || defaultTotal) : defaultTotal;
           };
 
-          const count1 = getUnitRegistrantCount('kbtk', selectedReportYear);
-          const quota1 = getUnitQuotaTotal('KB & TK Taman Main Royal At-Tin', selectedReportYear);
+          const count1 = getUnitRegistrantCount('kbtk', chartYear);
+          const quota1 = getUnitQuotaTotal('KB & TK Taman Main Royal At-Tin', chartYear);
 
-          const count2 = getUnitRegistrantCount('sd', selectedReportYear);
-          const quota2 = getUnitQuotaTotal('SD Royal At-Tin Islamic School', selectedReportYear);
+          const count2 = getUnitRegistrantCount('sd', chartYear);
+          const quota2 = getUnitQuotaTotal('SD Royal At-Tin Islamic School', chartYear);
 
-          const count3 = getUnitRegistrantCount('nura', selectedReportYear);
-          const quota3 = getUnitQuotaTotal('NURA', selectedReportYear);
+          const count3 = getUnitRegistrantCount('nura', chartYear);
+          const quota3 = getUnitQuotaTotal('NURA', chartYear);
 
           const maxVal = Math.max(50, count1, quota1, count2, quota2, count3, quota3);
           const maxY = Math.ceil((maxVal + 10) / 10) * 10;
@@ -1698,28 +1806,62 @@ export default function DashboardClient({
             { id: 'nura', title: 'NURA Tahfidz', registered: count3, quota: quota3, color: '#10b981' }
           ];
 
-          // Filter registran berdasarkan otorisasi role unit dan tab filter terpilih
+          // Filter registran berdasarkan otorisasi role unit, filter unit, dan TAHUN AJARAN (Perbaikan Filter Tahun Ajaran)
           const filteredRegistrants = localRegistrants.filter((reg: any) => {
-            if (user.role === 'admin_kbtk') return matchesUnit(reg.nama_unit, 'kbtk');
-            if (user.role === 'admin_sd') return matchesUnit(reg.nama_unit, 'sd');
-            if (user.role === 'admin_nura') return matchesUnit(reg.nama_unit, 'nura');
-            
-            if (selectedUnitFilter === 'kbtk') return matchesUnit(reg.nama_unit, 'kbtk');
-            if (selectedUnitFilter === 'sd') return matchesUnit(reg.nama_unit, 'sd');
-            if (selectedUnitFilter === 'nura') return matchesUnit(reg.nama_unit, 'nura');
-            return true;
+            let matchesU = false;
+            if (user.role === 'admin_kbtk') matchesU = matchesUnit(reg.nama_unit, 'kbtk');
+            else if (user.role === 'admin_sd') matchesU = matchesUnit(reg.nama_unit, 'sd');
+            else if (user.role === 'admin_nura') matchesU = matchesUnit(reg.nama_unit, 'nura');
+            else if (selectedUnitFilter === 'kbtk') matchesU = matchesUnit(reg.nama_unit, 'kbtk');
+            else if (selectedUnitFilter === 'sd') matchesU = matchesUnit(reg.nama_unit, 'sd');
+            else if (selectedUnitFilter === 'nura') matchesU = matchesUnit(reg.nama_unit, 'nura');
+            else matchesU = true;
+
+            const matchesTa = selectedReportYear === 'all' || (reg.tahun_ajaran || '').trim() === selectedReportYear.trim();
+            return matchesU && matchesTa;
           });
 
           const showUnitTabs = ['admin', 'yayasan'].includes(user.role);
 
+          // Hitung counter untuk jadwal psikotes
+          const unassignedPsychotestCount = filteredRegistrants.filter(r => r.status === 'Terverifikasi' && !r.tanggal_psikotest).length;
+          const scheduledPsychotestCount = filteredRegistrants.filter(r => r.status === 'Menunggu Hasil Psikotest' || (r.tanggal_psikotest && !r.hasil_psikotest)).length;
+          const finishedPsychotestCount = filteredRegistrants.filter(r => r.hasil_psikotest || ['Menunggu Surat Penerimaan Sekolah', 'Menunggu Metode Pembayaran', 'Menunggu Pembayaran Angsuran 1', 'Menunggu Pembayaran Angsuran 2', 'Menunggu Pembayaran Angsuran 3', 'Menunggu Pembayaran Full Payment', 'Menunggu Username & Password', 'Selesai', 'Selesai & Tidak Lanjut'].includes(r.status)).length;
+
+          // Filter khusus untuk Tabel Jadwal Psikotes
+          const psychotestRegistrants = filteredRegistrants.filter((reg: any) => {
+            if (psychotestFilter === 'unassigned') return reg.status === 'Terverifikasi' || !reg.tanggal_psikotest;
+            if (psychotestFilter === 'scheduled') return reg.status === 'Menunggu Hasil Psikotest' || (reg.tanggal_psikotest && !reg.hasil_psikotest);
+            if (psychotestFilter === 'finished') return reg.hasil_psikotest || ['Menunggu Surat Penerimaan Sekolah', 'Menunggu Metode Pembayaran', 'Menunggu Pembayaran Angsuran 1', 'Menunggu Pembayaran Angsuran 2', 'Menunggu Pembayaran Angsuran 3', 'Menunggu Pembayaran Full Payment', 'Menunggu Username & Password', 'Selesai', 'Selesai & Tidak Lanjut'].includes(reg.status);
+            return true;
+          }).filter((reg: any) => {
+            if (!psychotestSearch.trim()) return true;
+            const q = psychotestSearch.toLowerCase();
+            return (
+              (reg.nama_anak || '').toLowerCase().includes(q) ||
+              (reg.no_pendaftaran || '').toLowerCase().includes(q) ||
+              (reg.nama_ayah || '').toLowerCase().includes(q) ||
+              (reg.nama_ibu || '').toLowerCase().includes(q) ||
+              (reg.nama_orang_tua || '').toLowerCase().includes(q) ||
+              (reg.asal_sekolah || '').toLowerCase().includes(q) ||
+              (reg.whatsapp || '').includes(q)
+            );
+          });
+
           return (
             <section className={`glass-panel ${styles.panel} animate-fade-in`}>
-              {/* Header section dengan selektor tahun */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-                <h2 className={styles.panelTitle} style={{ marginBottom: 0 }}>Portal Manajemen PPDB Online</h2>
+              {/* Header section dengan selektor tahun ajaran */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
+                <div>
+                  <h2 className={styles.panelTitle} style={{ marginBottom: '4px' }}>Portal Manajemen PPDB Online</h2>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0 }}>
+                    Kelola verifikasi pendaftar, pembukuan keuangan cicilan, dan jadwal observasi psikotes siswa.
+                  </p>
+                </div>
                 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Tahun Ajaran:</span>
+                {/* Filter Tahun Ajaran */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'var(--bg-secondary)', padding: '6px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--accent-color)' }}>📅 Filter Tahun Ajaran:</span>
                   <select
                     value={selectedReportYear}
                     onChange={(e) => setSelectedReportYear(e.target.value)}
@@ -1727,637 +1869,1175 @@ export default function DashboardClient({
                       padding: '6px 12px',
                       borderRadius: 'var(--radius-sm)',
                       border: '1px solid var(--border-color)',
-                      backgroundColor: 'var(--bg-secondary)',
+                      backgroundColor: 'var(--bg-primary)',
                       color: 'var(--text-primary)',
                       fontSize: '0.85rem',
-                      fontWeight: 600,
+                      fontWeight: 700,
                       outline: 'none',
                       cursor: 'pointer'
                     }}
                   >
-                    <option value="2026/2027">2026/2027</option>
-                    <option value="2027/2028">2027/2028</option>
+                    <option value="all">🌟 Semua Tahun Ajaran</option>
+                    {uniqueYears.map(y => (
+                      <option key={y} value={y}>TA {y}</option>
+                    ))}
                   </select>
                 </div>
               </div>
 
-              {/* Laporan Grafik Quota PPDB */}
+              {/* Sub-Navigasi Tab: Data Pendaftar vs Jadwal Psikotes */}
               <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                gap: '24px',
-                marginBottom: '32px',
-                backgroundColor: 'var(--bg-secondary)',
-                padding: '20px',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--border-color)'
+                display: 'flex',
+                gap: '12px',
+                marginBottom: '24px',
+                borderBottom: '2px solid var(--border-color)',
+                paddingBottom: '12px',
+                flexWrap: 'wrap'
               }}>
-                {/* Kolom Kiri: Chart */}
-                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '16px', color: 'var(--text-primary)' }}>Visualisasi Pendaftar VS Kuota</h3>
-                  
-                  <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
-                    {gridLines.map((ratio, index) => {
-                      const y = chartHeight - paddingBottom - (ratio * graphHeight);
-                      const val = Math.round(ratio * maxY);
-                      return (
-                        <g key={index}>
-                          <line
-                            x1={paddingLeft}
-                            y1={y}
-                            x2={chartWidth - paddingRight}
-                            y2={y}
-                            stroke="var(--border-color)"
-                            strokeDasharray="4 4"
-                            strokeWidth={1}
-                          />
-                          <text
-                            x={paddingLeft - 10}
-                            y={y + 4}
-                            textAnchor="end"
-                            fontSize="10"
-                            fill="var(--text-secondary)"
-                            fontWeight="bold"
-                          >
-                            {val}
-                          </text>
-                        </g>
-                      );
-                    })}
-                    
-                    {chartData.map((data, i) => {
-                      const colWidth = graphWidth / chartData.length;
-                      const xCenter = paddingLeft + (i * colWidth) + (colWidth / 2);
-                      const barW = 24;
-                      const gap = 6;
-                      const xReg = xCenter - barW - (gap / 2);
-                      const xQuota = xCenter + (gap / 2);
-                      
-                      const regH = (data.registered / maxY) * graphHeight;
-                      const quotaH = (data.quota / maxY) * graphHeight;
-                      
-                      const yReg = chartHeight - paddingBottom - regH;
-                      const yQuota = chartHeight - paddingBottom - quotaH;
-                      
-                      return (
-                        <g key={i}>
-                          {/* Bar 1: Registered */}
-                          <rect
-                            x={xReg}
-                            y={yReg}
-                            width={barW}
-                            height={regH}
-                            fill="#6366f1"
-                            rx="4"
-                            style={{ transition: 'all 0.3s ease', cursor: 'pointer' }}
-                          >
-                            <title>{`Terdaftar: ${data.registered} Siswa`}</title>
-                          </rect>
-                          <text
-                            x={xReg + barW/2}
-                            y={yReg - 6}
-                            textAnchor="middle"
-                            fontSize="10"
-                            fontWeight="bold"
-                            fill="var(--text-primary)"
-                          >
-                            {data.registered}
-                          </text>
+                <button
+                  type="button"
+                  onClick={() => setPpdbSubSection('pendaftar')}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 20px',
+                    borderRadius: '8px',
+                    fontWeight: 700,
+                    fontSize: '0.9rem',
+                    cursor: 'pointer',
+                    border: 'none',
+                    backgroundColor: ppdbSubSection === 'pendaftar' ? 'var(--accent-color)' : 'var(--bg-secondary)',
+                    color: ppdbSubSection === 'pendaftar' ? '#ffffff' : 'var(--text-secondary)',
+                    transition: 'all 0.2s ease',
+                    boxShadow: ppdbSubSection === 'pendaftar' ? '0 4px 12px rgba(99, 102, 241, 0.25)' : 'none'
+                  }}
+                >
+                  📋 Data Pendaftar & Keuangan ({filteredRegistrants.length})
+                </button>
 
-                          {/* Bar 2: Quota */}
-                          <rect
-                            x={xQuota}
-                            y={yQuota}
-                            width={barW}
-                            height={quotaH}
-                            fill="#38bdf8"
-                            rx="4"
-                            style={{ transition: 'all 0.3s ease', cursor: 'pointer' }}
-                          >
-                            <title>{`Kuota: ${data.quota} Siswa`}</title>
-                          </rect>
-                          <text
-                            x={xQuota + barW/2}
-                            y={yQuota - 6}
-                            textAnchor="middle"
-                            fontSize="10"
-                            fontWeight="bold"
-                            fill="var(--text-primary)"
-                          >
-                            {data.quota}
-                          </text>
-
-                          {/* X axis Label */}
-                          <text
-                            x={xCenter}
-                            y={chartHeight - 10}
-                            textAnchor="middle"
-                            fontSize="11"
-                            fontWeight="600"
-                            fill="var(--text-secondary)"
-                          >
-                            {data.label}
-                          </text>
-                        </g>
-                      );
-                    })}
-                  </svg>
-                  
-                  {/* Legend */}
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '16px', fontSize: '0.8rem', fontWeight: 600 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <div style={{ width: '12px', height: '12px', backgroundColor: '#6366f1', borderRadius: '3px' }}></div>
-                      <span style={{ color: 'var(--text-secondary)' }}>Terdaftar ({count1 + count2 + count3})</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <div style={{ width: '12px', height: '12px', backgroundColor: '#38bdf8', borderRadius: '3px' }}></div>
-                      <span style={{ color: 'var(--text-secondary)' }}>Kuota ({quota1 + quota2 + quota3})</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Kolom Kanan: Detail Cards */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', justifyContent: 'center' }}>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '4px', color: 'var(--text-primary)' }}>Detail Kuota per Unit</h3>
-                  
-                  {unitsSummary.map((unit) => {
-                    const sisa = Math.max(0, unit.quota - unit.registered);
-                    const pct = Math.min(100, Math.round((unit.registered / unit.quota) * 100));
-                    return (
-                      <div key={unit.id} style={{
-                        backgroundColor: 'var(--bg-primary)',
-                        padding: '12px 16px',
-                        borderRadius: 'var(--radius-sm)',
-                        border: '1px solid var(--border-color)',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
-                      }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 700, fontSize: '0.85rem' }}>
-                          <span style={{ color: 'var(--text-primary)' }}>{unit.title}</span>
-                          <span style={{ color: unit.color }}>{unit.registered} / {unit.quota} Siswa</span>
-                        </div>
-                        
-                        {/* Progress Bar */}
-                        <div style={{ width: '100%', height: '8px', backgroundColor: 'var(--border-color)', borderRadius: '4px', overflow: 'hidden', marginTop: '8px', marginBottom: '4px' }}>
-                          <div style={{ width: `${pct}%`, height: '100%', backgroundColor: unit.color, borderRadius: '4px' }}></div>
-                        </div>
-                        
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
-                          <span>{pct}% Terisi</span>
-                          <span>{sisa} Kursi Tersisa</span>
-                        </div>
-
-                        {/* Breakdown Kuota Kelas */}
-                        {unit.id === 'kbtk' && (
-                          <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px dashed var(--border-color)', fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                            <span>🌸 KB-A: <strong>7</strong></span>
-                            <span>•</span>
-                            <span>🧸 KB-B: <strong>5</strong></span>
-                            <span>•</span>
-                            <span>🎨 TK-A: <strong>13</strong></span>
-                            <span>•</span>
-                            <span>🎓 TK-B: <strong>7</strong></span>
-                          </div>
-                        )}
-                        {unit.id === 'sd' && (
-                          <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px dashed var(--border-color)', fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                            <span>📚 Kelas 1: <strong>12</strong></span>
-                            <span>•</span>
-                            <span>🎒 Kelas 2: <strong>9</strong></span>
-                            <span>•</span>
-                            <span>✏️ Kelas 3: <strong>11</strong></span>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setPpdbSubSection('jadwal_psikotes')}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 20px',
+                    borderRadius: '8px',
+                    fontWeight: 700,
+                    fontSize: '0.9rem',
+                    cursor: 'pointer',
+                    border: 'none',
+                    backgroundColor: ppdbSubSection === 'jadwal_psikotes' ? 'var(--accent-color)' : 'var(--bg-secondary)',
+                    color: ppdbSubSection === 'jadwal_psikotes' ? '#ffffff' : 'var(--text-secondary)',
+                    transition: 'all 0.2s ease',
+                    boxShadow: ppdbSubSection === 'jadwal_psikotes' ? '0 4px 12px rgba(99, 102, 241, 0.25)' : 'none'
+                  }}
+                >
+                  🗓️ Tabel Info Jadwal & Reschedule Psikotes
+                  {scheduledPsychotestCount + unassignedPsychotestCount > 0 && (
+                    <span style={{
+                      backgroundColor: ppdbSubSection === 'jadwal_psikotes' ? '#ffffff' : 'var(--accent-color)',
+                      color: ppdbSubSection === 'jadwal_psikotes' ? 'var(--accent-color)' : '#ffffff',
+                      fontSize: '0.75rem',
+                      fontWeight: 800,
+                      padding: '2px 8px',
+                      borderRadius: '12px'
+                    }}>
+                      {scheduledPsychotestCount + unassignedPsychotestCount}
+                    </span>
+                  )}
+                </button>
               </div>
 
-              {/* Tabs / Filter Unit untuk List */}
-              {showUnitTabs && (
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', overflowX: 'auto', paddingBottom: '4px' }}>
-                  {[
-                    { id: 'all', label: 'Semua Unit' },
-                    { id: 'kbtk', label: 'KB-TK Taman Main' },
-                    { id: 'sd', label: 'SD Royal At-Tin' },
-                    { id: 'nura', label: 'NURA Tahfidz' }
-                  ].map(tab => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setSelectedUnitFilter(tab.id as any)}
-                      style={{
-                        padding: '8px 16px',
-                        borderRadius: '20px',
-                        fontSize: '0.8rem',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        border: '1px solid var(--border-color)',
-                        backgroundColor: selectedUnitFilter === tab.id ? 'var(--accent-color)' : 'var(--bg-secondary)',
-                        color: selectedUnitFilter === tab.id ? '#ffffff' : 'var(--text-secondary)',
-                        transition: 'all 0.2s ease',
-                        outline: 'none'
-                      }}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-              
-              {!showUnitTabs && (
-                <div style={{
-                  marginBottom: '16px',
-                  padding: '8px 12px',
-                  backgroundColor: 'rgba(99, 102, 241, 0.08)',
-                  borderLeft: '4px solid var(--accent-color)',
-                  borderRadius: '0 var(--radius-sm) var(--radius-sm) 0',
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  color: 'var(--accent-color)'
-                }}>
-                  Menampilkan pendaftaran khusus unit: {user.role === 'admin_kbtk' ? 'KB & TK Taman Main' : user.role === 'admin_sd' ? 'SD Royal At-Tin' : 'NURA Tahfidz Center'}
-                </div>
-              )}
-
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', textAlign: 'left' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '2px solid var(--border-color)', color: 'var(--text-secondary)' }}>
-                      <th style={{ padding: '12px' }}>No Pendaftaran</th>
-                      <th style={{ padding: '12px' }}>Nama Anak</th>
-                      <th style={{ padding: '12px' }}>Orang Tua / WA</th>
-                      <th style={{ padding: '12px' }}>Bukti Bayar</th>
-                      <th style={{ padding: '12px' }}>Buku Besar (Keuangan)</th>
-                      <th style={{ padding: '12px' }}>Status</th>
-                      <th style={{ padding: '12px', textAlign: 'right' }}>Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredRegistrants.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                          Belum ada siswa yang mendaftar PPDB.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredRegistrants.map((reg: any) => {
-                      const { obligation, paid, arrears } = calculatePayments(reg);
-                      const formatCurrency = (val: number) => {
-                        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
-                      };
+              {/* VIEW 1: DATA PENDAFTAR & BUKU BESAR KEUANGAN */}
+              {ppdbSubSection === 'pendaftar' && (
+                <div>
+                  {/* Laporan Grafik Quota PPDB */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                    gap: '24px',
+                    marginBottom: '32px',
+                    backgroundColor: 'var(--bg-secondary)',
+                    padding: '20px',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--border-color)'
+                  }}>
+                    {/* Kolom Kiri: Chart */}
+                    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>Visualisasi Pendaftar VS Kuota</h3>
+                        <small style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>TA {chartYear}</small>
+                      </div>
                       
-                      const getDynamicCredentials = () => {
-                        const firstName = (reg.nama_anak || '').trim().split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
-                        const username = `${firstName || 'siswa'}_royalattin`;
-
-                        let password = 'siswa123';
-                        if (reg.tanggal_lahir) {
-                          const parts = reg.tanggal_lahir.split('-');
-                          if (parts.length === 3) {
-                            if (parts[0].length === 4) {
-                              const y = parts[0];
-                              const m = parts[1].padStart(2, '0');
-                              const d = parts[2].padStart(2, '0');
-                              password = `${d}${m}${y}`;
-                            } else if (parts[2].length === 4) {
-                              const d = parts[0].padStart(2, '0');
-                              const m = parts[1].padStart(2, '0');
-                              const y = parts[2];
-                              password = `${d}${m}${y}`;
-                            }
-                          }
-                        }
-                        return { username, password };
-                      };
-                      const dynamicCreds = getDynamicCredentials();
-
-                      return (
-                        <React.Fragment key={reg.id}>
-                          <tr style={{ borderBottom: '1px solid var(--border-color)', backgroundColor: expandedRegId === reg.id ? 'var(--bg-secondary)' : 'transparent' }}>
-                            <td style={{ padding: '16px 12px', fontWeight: 600 }}>
-                              <button
-                                type="button"
-                                onClick={() => setExpandedRegId(expandedRegId === reg.id ? null : reg.id)}
-                                style={{
-                                  background: 'none',
-                                  border: 'none',
-                                  cursor: 'pointer',
-                                  padding: '0 8px 0 0',
-                                  fontSize: '0.75rem',
-                                  color: 'var(--accent-color)',
-                                  fontWeight: 'bold',
-                                  display: 'inline-flex',
-                                  alignItems: 'center'
-                                }}
+                      <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
+                        {gridLines.map((ratio, index) => {
+                          const y = chartHeight - paddingBottom - (ratio * graphHeight);
+                          const val = Math.round(ratio * maxY);
+                          return (
+                            <g key={index}>
+                              <line
+                                x1={paddingLeft}
+                                y1={y}
+                                x2={chartWidth - paddingRight}
+                                y2={y}
+                                stroke="var(--border-color)"
+                                strokeDasharray="4 4"
+                                strokeWidth={1}
+                              />
+                              <text
+                                x={paddingLeft - 10}
+                                y={y + 4}
+                                textAnchor="end"
+                                fontSize="10"
+                                fill="var(--text-secondary)"
+                                fontWeight="bold"
                               >
-                                {expandedRegId === reg.id ? '▼' : '▶'}
-                              </button>
-                              {reg.no_pendaftaran}
-                            </td>
-                            <td style={{ padding: '16px 12px' }}>
-                              <strong>{reg.nama_anak}</strong> <br/>
-                              <small style={{ color: 'var(--text-secondary)' }}>Unit: {reg.nama_unit} {reg.pilihan_kelas ? `(${reg.pilihan_kelas})` : ''} | TA: {reg.tahun_ajaran}</small>
-                            </td>
-                            <td style={{ padding: '16px 12px' }}>{reg.nama_orang_tua} <br/> <small style={{ color: 'var(--accent-color)' }}>+{reg.whatsapp}</small></td>
-                            <td style={{ padding: '16px 12px' }}>
-                              {reg.bukti_bayar_url ? (
-                                <button 
-                                  type="button"
-                                  onClick={() => openProofModal(getProofFileUrl(reg.id, 'bukti_bayar_url', reg.bukti_bayar_url), 'Bukti Transfer Biaya Pendaftaran', reg.nama_anak)}
-                                  style={{ 
-                                    background: 'none', 
-                                    border: 'none', 
-                                    padding: 0, 
-                                    color: 'var(--accent-color)', 
-                                    cursor: 'pointer', 
-                                    fontWeight: 600, 
-                                    display: 'inline-flex', 
-                                    alignItems: 'center', 
-                                    gap: '4px',
-                                    fontSize: '0.85rem'
-                                  }}
-                                >
-                                  🔗 Lihat Bukti
-                                </button>
-                              ) : (
-                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Belum upload</span>
-                              )}
-                            </td>
-                            <td style={{ padding: '16px 12px' }}>
-                              {reg.metode_pembayaran ? (
-                                <div>
-                                  <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', backgroundColor: 'var(--border-color)', color: 'var(--text-primary)' }}>
-                                    {reg.metode_pembayaran}
-                                  </span>
-                                  <div style={{ marginTop: '4px', fontSize: '0.75rem', lineHeight: 1.4 }}>
-                                    <span style={{ color: '#22c55e', fontWeight: 600 }}>Bayar: {formatCurrency(paid)}</span> <br/>
-                                    <span style={{ color: arrears > 0 ? '#ef4444' : '#22c55e', fontWeight: 600 }}>Sisa: {formatCurrency(arrears)}</span>
-                                  </div>
-                                </div>
-                              ) : (
-                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Belum pilih metode</span>
-                              )}
-                            </td>
-                            <td style={{ padding: '16px 12px' }}>
-                              <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: '12px', textTransform: 'uppercase', 
-                                backgroundColor: reg.status === 'Selesai' ? 'rgba(34,197,94,0.1)' : reg.status === 'Selesai & Tidak Lanjut' ? 'rgba(239,68,68,0.1)' : 'rgba(234,179,8,0.1)',
-                                color: reg.status === 'Selesai' ? '#22c55e' : reg.status === 'Selesai & Tidak Lanjut' ? '#ef4444' : '#eab308' }}>
-                                {reg.status}
-                              </span>
-                              {verifyingId === reg.id && (
-                                <span style={{ marginLeft: '8px', fontSize: '0.75rem', color: '#6b7280' }}>
-                                  🔄 Menyimpan...
-                                </span>
-                              )}
-                            </td>
-                            <td style={{ padding: '16px 12px', textAlign: 'right' }}>
-                              {/* Aksi 1: Verifikasi awal dokumen */}
-                              {reg.status === 'Menunggu Verifikasi' && (
-                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                  <button
-                                    className="btn-primary"
-                                    style={{ padding: '6px 12px', fontSize: '0.8rem', backgroundColor: '#22c55e', backgroundImage: 'none' }}
-                                    disabled={verifyingId === reg.id}
-                                    onClick={() => handleVerifyPayment(reg.id, true)}
-                                  >
-                                    Setujui
-                                  </button>
-                                  <button
-                                    className="btn-primary"
-                                    style={{ padding: '6px 12px', fontSize: '0.8rem', backgroundColor: '#ef4444', backgroundImage: 'none' }}
-                                    disabled={verifyingId === reg.id}
-                                    onClick={() => handleVerifyPayment(reg.id, false)}
-                                  >
-                                    Tolak
-                                  </button>
-                                </div>
-                              )}
-    
-                              {/* Aksi 2: Jadwalkan Psikotes */}
-                              {reg.status === 'Terverifikasi' && (
-                                <form onSubmit={(e) => handleAdminUpdatePpdb(e, reg.id)} style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap', maxWidth: '480px', marginLeft: 'auto' }}>
-                                  <input type="date" name="tanggal_psikotest" className="form-input" style={{ width: '130px', padding: '6px 8px', fontSize: '0.8rem' }} defaultValue="2026-08-15" required disabled={adminActionLoadingId === reg.id} />
-                                  <input type="text" name="waktu_psikotest" className="form-input" style={{ width: '100px', padding: '6px 8px', fontSize: '0.8rem' }} placeholder="Waktu (e.g. 08:00)" defaultValue="08:00 WIB" required disabled={adminActionLoadingId === reg.id} />
-                                  <input type="text" name="lokasi_psikotest" className="form-input" style={{ width: '100px', padding: '6px 8px', fontSize: '0.8rem' }} placeholder="Ruang..." defaultValue="Ruang Observasi Utama" required disabled={adminActionLoadingId === reg.id} />
-                                  <input type="text" name="catatan_psikotest" className="form-input" style={{ width: '140px', padding: '6px 8px', fontSize: '0.8rem' }} placeholder="Catatan (opsional)" disabled={adminActionLoadingId === reg.id} />
-                                  <button type="submit" className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }} disabled={adminActionLoadingId === reg.id}>Jadwalkan</button>
-                                </form>
-                              )}
-    
-                              {/* Aksi 3: Input Hasil Psikotes */}
-                              {reg.status === 'Menunggu Hasil Psikotest' && (
-                                <form onSubmit={(e) => handleAdminUpdatePpdb(e, reg.id)} style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
-                                  <select name="hasil_psikotest" className="form-input" style={{ width: '100px', padding: '6px 8px', fontSize: '0.8rem' }} required disabled={adminActionLoadingId === reg.id}>
-                                    <option value="">- Hasil -</option>
-                                    <option value="LULUS">LULUS</option>
-                                    <option value="TIDAK LULUS">TIDAK LULUS</option>
-                                  </select>
-                                  <input type="url" name="surat_penerimaan_url" className="form-input" style={{ width: '140px', padding: '6px 8px', fontSize: '0.8rem' }} placeholder="Link Surat Penerimaan" defaultValue="/dummy/surat_penerimaan.html" required disabled={adminActionLoadingId === reg.id} />
-                                  <button type="submit" className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }} disabled={adminActionLoadingId === reg.id}>Simpan</button>
-                                </form>
-                              )}
-    
-                              {/* Aksi 4: Buat Akun Portal Siswa Baru */}
-                              {reg.status === 'Menunggu Username & Password' && (
-                                <form onSubmit={(e) => handleAdminUpdatePpdb(e, reg.id)} style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
-                                  <input type="text" name="siswa_username" className="form-input" style={{ width: '110px', padding: '6px 8px', fontSize: '0.8rem' }} placeholder="Username Baru" defaultValue={dynamicCreds.username} required disabled={adminActionLoadingId === reg.id} />
-                                  <input type="text" name="siswa_password" className="form-input" style={{ width: '110px', padding: '6px 8px', fontSize: '0.8rem' }} placeholder="Password Baru" defaultValue={dynamicCreds.password} required disabled={adminActionLoadingId === reg.id} />
-                                  <button type="submit" className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }} disabled={adminActionLoadingId === reg.id}>Buat Akun</button>
-                                </form>
-                              )}
-    
-                              {/* Aksi Pasif: Selesai */}
-                              {!['Menunggu Verifikasi', 'Terverifikasi', 'Menunggu Hasil Psikotest', 'Menunggu Username & Password'].includes(reg.status) && (
-                                  <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Proses Selesai / Pasif</span>
-                              )}
+                                {val}
+                              </text>
+                            </g>
+                          );
+                        })}
+                        
+                        {chartData.map((data, i) => {
+                          const colWidth = graphWidth / chartData.length;
+                          const xCenter = paddingLeft + (i * colWidth) + (colWidth / 2);
+                          const barW = 24;
+                          const gap = 6;
+                          const xReg = xCenter - barW - (gap / 2);
+                          const xQuota = xCenter + (gap / 2);
+                          
+                          const regH = (data.registered / maxY) * graphHeight;
+                          const quotaH = (data.quota / maxY) * graphHeight;
+                          
+                          const yReg = chartHeight - paddingBottom - regH;
+                          const yQuota = chartHeight - paddingBottom - quotaH;
+                          
+                          return (
+                            <g key={i}>
+                              {/* Bar 1: Registered */}
+                              <rect
+                                x={xReg}
+                                y={yReg}
+                                width={barW}
+                                height={regH}
+                                fill="#6366f1"
+                                rx="4"
+                                style={{ transition: 'all 0.3s ease', cursor: 'pointer' }}
+                              >
+                                <title>{`Terdaftar: ${data.registered} Siswa`}</title>
+                              </rect>
+                              <text
+                                x={xReg + barW/2}
+                                y={yReg - 6}
+                                textAnchor="middle"
+                                fontSize="10"
+                                fontWeight="bold"
+                                fill="var(--text-primary)"
+                              >
+                                {data.registered}
+                              </text>
+
+                              {/* Bar 2: Quota */}
+                              <rect
+                                x={xQuota}
+                                y={yQuota}
+                                width={barW}
+                                height={quotaH}
+                                fill="#38bdf8"
+                                rx="4"
+                                style={{ transition: 'all 0.3s ease', cursor: 'pointer' }}
+                              >
+                                <title>{`Kuota: ${data.quota} Siswa`}</title>
+                              </rect>
+                              <text
+                                x={xQuota + barW/2}
+                                y={yQuota - 6}
+                                textAnchor="middle"
+                                fontSize="10"
+                                fontWeight="bold"
+                                fill="var(--text-primary)"
+                              >
+                                {data.quota}
+                              </text>
+
+                              {/* X axis Label */}
+                              <text
+                                x={xCenter}
+                                y={chartHeight - 10}
+                                textAnchor="middle"
+                                fontSize="11"
+                                fontWeight="600"
+                                fill="var(--text-secondary)"
+                              >
+                                {data.label}
+                              </text>
+                            </g>
+                          );
+                        })}
+                      </svg>
+                      
+                      {/* Legend */}
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '16px', fontSize: '0.8rem', fontWeight: 600 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <div style={{ width: '12px', height: '12px', backgroundColor: '#6366f1', borderRadius: '3px' }}></div>
+                          <span style={{ color: 'var(--text-secondary)' }}>Terdaftar ({count1 + count2 + count3})</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <div style={{ width: '12px', height: '12px', backgroundColor: '#38bdf8', borderRadius: '3px' }}></div>
+                          <span style={{ color: 'var(--text-secondary)' }}>Kuota ({quota1 + quota2 + quota3})</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Kolom Kanan: Detail Cards */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', justifyContent: 'center' }}>
+                      <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '4px', color: 'var(--text-primary)' }}>Detail Kuota per Unit ({selectedReportYear === 'all' ? 'Semua TA' : `TA ${selectedReportYear}`})</h3>
+                      
+                      {unitsSummary.map((unit) => {
+                        const sisa = Math.max(0, unit.quota - unit.registered);
+                        const pct = Math.min(100, Math.round((unit.registered / unit.quota) * 100));
+                        return (
+                          <div key={unit.id} style={{
+                            backgroundColor: 'var(--bg-primary)',
+                            padding: '12px 16px',
+                            borderRadius: 'var(--radius-sm)',
+                            border: '1px solid var(--border-color)',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+                          }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 700, fontSize: '0.85rem' }}>
+                              <span style={{ color: 'var(--text-primary)' }}>{unit.title}</span>
+                              <span style={{ color: unit.color }}>{unit.registered} / {unit.quota} Siswa</span>
+                            </div>
+                            
+                            {/* Progress Bar */}
+                            <div style={{ width: '100%', height: '8px', backgroundColor: 'var(--border-color)', borderRadius: '4px', overflow: 'hidden', marginTop: '8px', marginBottom: '4px' }}>
+                              <div style={{ width: `${pct}%`, height: '100%', backgroundColor: unit.color, borderRadius: '4px' }}></div>
+                            </div>
+                            
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                              <span>{pct}% Terisi</span>
+                              <span>{sisa} Kursi Tersisa</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Tabs / Filter Unit untuk List */}
+                  {showUnitTabs && (
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', overflowX: 'auto', paddingBottom: '4px' }}>
+                      {[
+                        { id: 'all', label: 'Semua Unit' },
+                        { id: 'kbtk', label: 'KB-TK Taman Main' },
+                        { id: 'sd', label: 'SD Royal At-Tin' },
+                        { id: 'nura', label: 'NURA Tahfidz' }
+                      ].map(tab => (
+                        <button
+                          key={tab.id}
+                          onClick={() => setSelectedUnitFilter(tab.id as any)}
+                          style={{
+                            padding: '8px 16px',
+                            borderRadius: '20px',
+                            fontSize: '0.8rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            border: '1px solid var(--border-color)',
+                            backgroundColor: selectedUnitFilter === tab.id ? 'var(--accent-color)' : 'var(--bg-secondary)',
+                            color: selectedUnitFilter === tab.id ? '#ffffff' : 'var(--text-secondary)',
+                            transition: 'all 0.2s ease',
+                            outline: 'none'
+                          }}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {!showUnitTabs && (
+                    <div style={{
+                      marginBottom: '16px',
+                      padding: '8px 12px',
+                      backgroundColor: 'rgba(99, 102, 241, 0.08)',
+                      borderLeft: '4px solid var(--accent-color)',
+                      borderRadius: '0 var(--radius-sm) var(--radius-sm) 0',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      color: 'var(--accent-color)'
+                    }}>
+                      Menampilkan pendaftaran khusus unit: {user.role === 'admin_kbtk' ? 'KB & TK Taman Main' : user.role === 'admin_sd' ? 'SD Royal At-Tin' : 'NURA Tahfidz Center'}
+                    </div>
+                  )}
+
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', textAlign: 'left' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '2px solid var(--border-color)', color: 'var(--text-secondary)' }}>
+                          <th style={{ padding: '12px' }}>No Pendaftaran</th>
+                          <th style={{ padding: '12px' }}>Calon Siswa</th>
+                          <th style={{ padding: '12px' }}>Orang Tua / Asal Sekolah</th>
+                          <th style={{ padding: '12px' }}>Bukti Formulir</th>
+                          <th style={{ padding: '12px' }}>Buku Besar (Keuangan)</th>
+                          <th style={{ padding: '12px' }}>Status & Jadwal</th>
+                          <th style={{ padding: '12px', textAlign: 'right' }}>Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredRegistrants.length === 0 ? (
+                          <tr>
+                            <td colSpan={7} style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                              Belum ada siswa yang mendaftar PPDB untuk filter yang dipilih.
                             </td>
                           </tr>
+                        ) : (
+                          filteredRegistrants.map((reg: any) => {
+                          const { obligation, paid, arrears } = calculatePayments(reg);
+                          const formatCurrency = (val: number) => {
+                            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
+                          };
                           
-                          {/* Expanded Sub-Row for Ledger & Details */}
-                          {expandedRegId === reg.id && (
-                            <tr>
-                              <td colSpan={7} style={{ padding: '16px 24px', backgroundColor: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)' }}>
-                                <div className="glass-panel animate-fade-in" style={{ padding: '20px', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}>
-                                  <h5 style={{ fontWeight: 700, margin: '0 0 16px 0', fontSize: '0.85rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    📋 Buku Besar Pembayaran & Detail Siswa ({reg.metode_pembayaran || 'Belum Pilih Metode'})
-                                  </h5>
+                          const getDynamicCredentials = () => {
+                            const firstName = (reg.nama_anak || '').trim().split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+                            const username = `${firstName || 'siswa'}_royalattin`;
 
-                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px', fontSize: '0.8rem' }}>
-                                    <div>
-                                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Alamat Rumah:</div>
-                                      <div style={{ fontWeight: 600, marginTop: '2px', color: 'var(--text-primary)' }}>{reg.alamat_rumah || '-'}</div>
-                                    </div>
-                                    <div>
-                                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Pilihan Kelas Tujuan:</div>
-                                      <div style={{ fontWeight: 600, marginTop: '2px', color: 'var(--accent-color)' }}>{reg.pilihan_kelas || '-'}</div>
-                                    </div>
-                                    <div>
-                                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Tanggal Lahir Anak:</div>
-                                      <div style={{ fontWeight: 600, marginTop: '2px', color: 'var(--text-primary)' }}>{reg.tanggal_lahir || '-'}</div>
-                                    </div>
-                                    <div>
-                                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Jadwal Psikotes:</div>
-                                      <div style={{ fontWeight: 600, marginTop: '2px', color: 'var(--text-primary)', lineHeight: 1.4 }}>
-                                        {reg.tanggal_psikotest ? (
-                                          <>
-                                            <div>Tanggal: {reg.tanggal_psikotest}</div>
-                                            <div>Waktu: {reg.waktu_psikotest || '-'}</div>
-                                            <div>Ruang: {reg.lokasi_psikotest}</div>
-                                            {reg.catatan_psikotest && (
-                                              <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', fontStyle: 'italic', marginTop: '2px' }}>
-                                                Catatan: {reg.catatan_psikotest}
-                                              </div>
-                                            )}
-                                          </>
-                                        ) : (
-                                          'Belum Terjadwal'
-                                        )}
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Akun Akses Portal:</div>
-                                      <div style={{ fontWeight: 600, marginTop: '2px', color: 'var(--text-primary)' }}>
-                                        {reg.siswa_username ? `User: ${reg.siswa_username} | Pass: ${reg.siswa_password}` : 'Belum Dibuat'}
-                                      </div>
-                                    </div>
+                            let password = 'siswa123';
+                            if (reg.tanggal_lahir) {
+                              const parts = reg.tanggal_lahir.split('-');
+                              if (parts.length === 3) {
+                                if (parts[0].length === 4) {
+                                  const y = parts[0];
+                                  const m = parts[1].padStart(2, '0');
+                                  const d = parts[2].padStart(2, '0');
+                                  password = `${d}${m}${y}`;
+                                } else if (parts[2].length === 4) {
+                                  const d = parts[0].padStart(2, '0');
+                                  const m = parts[1].padStart(2, '0');
+                                  const y = parts[2];
+                                  password = `${d}${m}${y}`;
+                                }
+                              }
+                            }
+                            return { username, password };
+                          };
+                          const dynamicCreds = getDynamicCredentials();
+
+                          let historyList: any[] = [];
+                          try {
+                            if (reg.history_jadwal_psikotest) {
+                              historyList = JSON.parse(reg.history_jadwal_psikotest);
+                              if (!Array.isArray(historyList)) historyList = [];
+                            }
+                          } catch (e) {}
+
+                          return (
+                            <React.Fragment key={reg.id}>
+                              <tr style={{ borderBottom: '1px solid var(--border-color)', backgroundColor: expandedRegId === reg.id ? 'var(--bg-secondary)' : 'transparent' }}>
+                                <td style={{ padding: '16px 12px', fontWeight: 600 }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedRegId(expandedRegId === reg.id ? null : reg.id)}
+                                    style={{
+                                      background: 'none',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      padding: '0 8px 0 0',
+                                      fontSize: '0.75rem',
+                                      color: 'var(--accent-color)',
+                                      fontWeight: 'bold',
+                                      display: 'inline-flex',
+                                      alignItems: 'center'
+                                    }}
+                                  >
+                                    {expandedRegId === reg.id ? '▼' : '▶'}
+                                  </button>
+                                  {reg.no_pendaftaran}
+                                </td>
+                                <td style={{ padding: '16px 12px' }}>
+                                  <strong>{reg.nama_anak}</strong> <br/>
+                                  <small style={{ color: 'var(--text-secondary)' }}>Unit: {reg.nama_unit} {reg.pilihan_kelas ? `(${reg.pilihan_kelas})` : ''} | TA: {reg.tahun_ajaran}</small>
+                                </td>
+                                <td style={{ padding: '16px 12px' }}>
+                                  <div style={{ fontWeight: 600 }}>
+                                    {reg.nama_ayah && reg.nama_ibu ? `Ayah: ${reg.nama_ayah} | Ibu: ${reg.nama_ibu}` : (reg.nama_orang_tua || '-')}
                                   </div>
-
-                                  {reg.metode_pembayaran && (
-                                    <>
-                                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '20px', textAlign: 'left' }}>
-                                        <div style={{ borderLeft: '3px solid var(--accent-color)', paddingLeft: '8px' }}>
-                                          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Kewajiban Uang Pangkal</div>
-                                          <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)' }}>{formatCurrency(obligation)}</div>
-                                        </div>
-                                        <div style={{ borderLeft: '3px solid #22c55e', paddingLeft: '8px' }}>
-                                          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Total Terbayar</div>
-                                          <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#22c55e' }}>{formatCurrency(paid)}</div>
-                                        </div>
-                                        <div style={{ borderLeft: `3px solid ${arrears > 0 ? '#ef4444' : '#22c55e'}`, paddingLeft: '8px' }}>
-                                          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Sisa Tunggakan</div>
-                                          <div style={{ fontSize: '0.95rem', fontWeight: 800, color: arrears > 0 ? '#ef4444' : '#22c55e' }}>{formatCurrency(arrears)}</div>
-                                        </div>
-                                      </div>
-
-                                      {/* Termin List */}
-                                      <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
-                                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem', textAlign: 'left' }}>
-                                          <thead>
-                                            <tr style={{ backgroundColor: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
-                                              <th style={{ padding: '8px' }}>Termin Cicilan</th>
-                                              <th style={{ padding: '8px' }}>Nominal</th>
-                                              <th style={{ padding: '8px' }}>Bukti Pembayaran (Unduh)</th>
-                                            </tr>
-                                          </thead>
-                                          <tbody>
-                                            <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                              <td style={{ padding: '8px' }}>Pendaftaran (Formulir)</td>
-                                              <td style={{ padding: '8px' }}>{formatCurrency(getRegistrationFee(reg.nama_unit || '', reg.tahun_ajaran))}</td>
-                                              <td style={{ padding: '8px' }}>
-                                                {reg.bukti_bayar_url ? (
-                                                  <button 
-                                                    type="button"
-                                                    onClick={() => openProofModal(getProofFileUrl(reg.id, 'bukti_bayar_url', reg.bukti_bayar_url), 'Bukti Transfer Pendaftaran (Formulir)', reg.nama_anak)}
-                                                    style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent-color)', fontWeight: 600, cursor: 'pointer', fontSize: '0.75rem' }}
-                                                  >
-                                                    🔗 Lihat Bukti Formulir
-                                                  </button>
-                                                ) : 'Belum upload'}
-                                              </td>
-                                            </tr>
-                                            
-                                            {reg.metode_pembayaran === 'Cash' && (
-                                              <tr>
-                                                <td style={{ padding: '8px' }}>Uang Masuk Full Payment</td>
-                                                <td style={{ padding: '8px' }}>{formatCurrency(obligation)}</td>
-                                                <td style={{ padding: '8px' }}>
-                                                  {reg.bukti_full_payment ? (
-                                                    <button 
-                                                      type="button"
-                                                      onClick={() => openProofModal(getProofFileUrl(reg.id, 'bukti_full_payment', reg.bukti_full_payment), 'Bukti Pembayaran Lunas', reg.nama_anak)}
-                                                      style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent-color)', fontWeight: 600, cursor: 'pointer', fontSize: '0.75rem' }}
-                                                    >
-                                                      🔗 Lihat Bukti Lunas
-                                                    </button>
-                                                  ) : (
-                                                    <span style={{ color: 'var(--text-secondary)' }}>Belum upload</span>
-                                                  )}
-                                                </td>
-                                              </tr>
-                                            )}
-
-                                            {reg.metode_pembayaran === 'Angsuran' && (
-                                              <>
-                                                <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                                  <td style={{ padding: '8px' }}>Angsuran 1 (50%)</td>
-                                                  <td style={{ padding: '8px' }}>{formatCurrency(obligation * 0.5)}</td>
-                                                  <td style={{ padding: '8px' }}>
-                                                    {reg.bukti_angsuran_1 ? (
-                                                      <button 
-                                                        type="button"
-                                                        onClick={() => openProofModal(getProofFileUrl(reg.id, 'bukti_angsuran_1', reg.bukti_angsuran_1), 'Bukti Pembayaran Angsuran 1', reg.nama_anak)}
-                                                        style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent-color)', fontWeight: 600, cursor: 'pointer', fontSize: '0.75rem' }}
-                                                      >
-                                                        🔗 Lihat Bukti Angsuran 1
-                                                      </button>
-                                                    ) : (
-                                                      <span style={{ color: 'var(--text-secondary)' }}>Belum upload</span>
-                                                    )}
-                                                  </td>
-                                                </tr>
-                                                <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                                  <td style={{ padding: '8px' }}>Angsuran 2 (25%)</td>
-                                                  <td style={{ padding: '8px' }}>{formatCurrency(obligation * 0.25)}</td>
-                                                  <td style={{ padding: '8px' }}>
-                                                    {reg.bukti_angsuran_2 ? (
-                                                      <button 
-                                                        type="button"
-                                                        onClick={() => openProofModal(getProofFileUrl(reg.id, 'bukti_angsuran_2', reg.bukti_angsuran_2), 'Bukti Pembayaran Angsuran 2', reg.nama_anak)}
-                                                        style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent-color)', fontWeight: 600, cursor: 'pointer', fontSize: '0.75rem' }}
-                                                      >
-                                                        🔗 Lihat Bukti Angsuran 2
-                                                      </button>
-                                                    ) : (
-                                                      <span style={{ color: 'var(--text-secondary)' }}>Belum upload</span>
-                                                    )}
-                                                  </td>
-                                                </tr>
-                                                <tr>
-                                                  <td style={{ padding: '8px' }}>Angsuran 3 (25% Pelunasan)</td>
-                                                  <td style={{ padding: '8px' }}>{formatCurrency(obligation * 0.25)}</td>
-                                                  <td style={{ padding: '8px' }}>
-                                                    {reg.bukti_angsuran_3 ? (
-                                                      <button 
-                                                        type="button"
-                                                        onClick={() => openProofModal(getProofFileUrl(reg.id, 'bukti_angsuran_3', reg.bukti_angsuran_3), 'Bukti Pembayaran Angsuran 3 (Pelunasan)', reg.nama_anak)}
-                                                        style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent-color)', fontWeight: 600, cursor: 'pointer', fontSize: '0.75rem' }}
-                                                      >
-                                                        🔗 Lihat Bukti Angsuran 3
-                                                      </button>
-                                                    ) : (
-                                                      <span style={{ color: 'var(--text-secondary)' }}>Belum upload</span>
-                                                    )}
-                                                  </td>
-                                                </tr>
-                                              </>
-                                            )}
-                                          </tbody>
-                                        </table>
-                                      </div>
-                                    </>
+                                  {reg.asal_sekolah && (
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                      🏫 Asal: {reg.asal_sekolah}
+                                    </div>
                                   )}
-                                </div>
-                              </td>
-                            </tr>
-                          )}
-                        </React.Fragment>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </section>
+                                  <a
+                                    href={`https://wa.me/${(reg.whatsapp || '').replace(/[^0-9]/g, '')}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ color: '#22c55e', fontSize: '0.75rem', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}
+                                  >
+                                    💬 +{reg.whatsapp}
+                                  </a>
+                                </td>
+                                <td style={{ padding: '16px 12px' }}>
+                                  {reg.bukti_bayar_url ? (
+                                    <button 
+                                      type="button"
+                                      onClick={() => openProofModal(getProofFileUrl(reg.id, 'bukti_bayar_url', reg.bukti_bayar_url), 'Bukti Transfer Biaya Pendaftaran', reg.nama_anak)}
+                                      style={{ 
+                                        background: 'none', 
+                                        border: 'none', 
+                                        padding: 0, 
+                                        color: 'var(--accent-color)', 
+                                        cursor: 'pointer', 
+                                        fontWeight: 600, 
+                                        display: 'inline-flex', 
+                                        alignItems: 'center', 
+                                        gap: '4px',
+                                        fontSize: '0.85rem'
+                                      }}
+                                    >
+                                      🔗 Lihat Bukti
+                                    </button>
+                                  ) : (
+                                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Belum upload</span>
+                                  )}
+                                </td>
+                                <td style={{ padding: '16px 12px' }}>
+                                  {reg.metode_pembayaran ? (
+                                    <div>
+                                      <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', backgroundColor: 'var(--border-color)', color: 'var(--text-primary)' }}>
+                                        {reg.metode_pembayaran}
+                                      </span>
+                                      <div style={{ marginTop: '4px', fontSize: '0.75rem', lineHeight: 1.4 }}>
+                                        <span style={{ color: '#22c55e', fontWeight: 600 }}>Bayar: {formatCurrency(paid)}</span> <br/>
+                                        <span style={{ color: arrears > 0 ? '#ef4444' : '#22c55e', fontWeight: 600 }}>Sisa: {formatCurrency(arrears)}</span>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Belum pilih metode</span>
+                                  )}
+                                </td>
+                                <td style={{ padding: '16px 12px' }}>
+                                  <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 8px', borderRadius: '12px', textTransform: 'uppercase', 
+                                    backgroundColor: reg.status === 'Selesai' ? 'rgba(34,197,94,0.1)' : reg.status === 'Selesai & Tidak Lanjut' ? 'rgba(239,68,68,0.1)' : 'rgba(234,179,8,0.1)',
+                                    color: reg.status === 'Selesai' ? '#22c55e' : reg.status === 'Selesai & Tidak Lanjut' ? '#ef4444' : '#eab308' }}>
+                                    {reg.status}
+                                  </span>
+
+                                  {/* Info Singkat Jadwal Psikotes */}
+                                  {reg.tanggal_psikotest && (
+                                    <div style={{ marginTop: '6px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                      📅 {reg.tanggal_psikotest} {reg.waktu_psikotest ? `(${reg.waktu_psikotest})` : ''}
+                                      {historyList.length > 0 && (
+                                        <button
+                                          type="button"
+                                          onClick={() => openHistoryModal(reg)}
+                                          style={{
+                                            display: 'block',
+                                            marginTop: '3px',
+                                            background: 'rgba(245, 158, 11, 0.12)',
+                                            border: '1px solid rgba(245, 158, 11, 0.3)',
+                                            color: '#d97706',
+                                            padding: '2px 6px',
+                                            borderRadius: '6px',
+                                            fontSize: '0.7rem',
+                                            fontWeight: 700,
+                                            cursor: 'pointer'
+                                          }}
+                                        >
+                                          🔄 {historyList.length}x Rescheduled (Lihat)
+                                        </button>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {verifyingId === reg.id && (
+                                    <span style={{ marginLeft: '8px', fontSize: '0.75rem', color: '#6b7280' }}>
+                                      🔄 Menyimpan...
+                                    </span>
+                                  )}
+                                </td>
+                                <td style={{ padding: '16px 12px', textAlign: 'right' }}>
+                                  {/* Aksi 1: Verifikasi awal dokumen */}
+                                  {reg.status === 'Menunggu Verifikasi' && (
+                                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                      <button
+                                        className="btn-primary"
+                                        style={{ padding: '6px 12px', fontSize: '0.8rem', backgroundColor: '#22c55e', backgroundImage: 'none' }}
+                                        disabled={verifyingId === reg.id}
+                                        onClick={() => handleVerifyPayment(reg.id, true)}
+                                      >
+                                        Setujui
+                                      </button>
+                                      <button
+                                        className="btn-primary"
+                                        style={{ padding: '6px 12px', fontSize: '0.8rem', backgroundColor: '#ef4444', backgroundImage: 'none' }}
+                                        disabled={verifyingId === reg.id}
+                                        onClick={() => handleVerifyPayment(reg.id, false)}
+                                      >
+                                        Tolak
+                                      </button>
+                                    </div>
+                                  )}
+        
+                                  {/* Aksi 2: Jadwalkan Psikotes Awal */}
+                                  {reg.status === 'Terverifikasi' && (
+                                    <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                                      <button
+                                        type="button"
+                                        className="btn-primary"
+                                        style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                                        onClick={() => openRescheduleModal(reg)}
+                                        disabled={adminActionLoadingId === reg.id}
+                                      >
+                                        🗓️ Jadwalkan Psikotes
+                                      </button>
+                                    </div>
+                                  )}
+        
+                                  {/* Aksi 3: Input Hasil Psikotes + Tombol Reschedule */}
+                                  {reg.status === 'Menunggu Hasil Psikotest' && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end' }}>
+                                      <form onSubmit={(e) => handleAdminUpdatePpdb(e, reg.id)} style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                                        <select name="hasil_psikotest" className="form-input" style={{ width: '95px', padding: '5px 8px', fontSize: '0.75rem' }} required disabled={adminActionLoadingId === reg.id}>
+                                          <option value="">- Hasil -</option>
+                                          <option value="LULUS">LULUS</option>
+                                          <option value="TIDAK LULUS">TIDAK LULUS</option>
+                                        </select>
+                                        <input type="url" name="surat_penerimaan_url" className="form-input" style={{ width: '130px', padding: '5px 8px', fontSize: '0.75rem' }} placeholder="Link Surat Penerimaan" defaultValue="/dummy/surat_penerimaan.html" required disabled={adminActionLoadingId === reg.id} />
+                                        <button type="submit" className="btn-primary" style={{ padding: '5px 10px', fontSize: '0.75rem' }} disabled={adminActionLoadingId === reg.id}>Simpan</button>
+                                      </form>
+                                      
+                                      <button
+                                        type="button"
+                                        onClick={() => openRescheduleModal(reg)}
+                                        style={{
+                                          background: 'rgba(99, 102, 241, 0.1)',
+                                          border: '1px solid var(--accent-color)',
+                                          color: 'var(--accent-color)',
+                                          padding: '4px 10px',
+                                          borderRadius: '6px',
+                                          fontSize: '0.75rem',
+                                          fontWeight: 700,
+                                          cursor: 'pointer'
+                                        }}
+                                      >
+                                        🔄 Reschedule Jadwal
+                                      </button>
+                                    </div>
+                                  )}
+        
+                                  {/* Aksi 4: Buat Akun Portal Siswa Baru */}
+                                  {reg.status === 'Menunggu Username & Password' && (
+                                    <form onSubmit={(e) => handleAdminUpdatePpdb(e, reg.id)} style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                                      <input type="text" name="siswa_username" className="form-input" style={{ width: '110px', padding: '6px 8px', fontSize: '0.8rem' }} placeholder="Username Baru" defaultValue={dynamicCreds.username} required disabled={adminActionLoadingId === reg.id} />
+                                      <input type="text" name="siswa_password" className="form-input" style={{ width: '110px', padding: '6px 8px', fontSize: '0.8rem' }} placeholder="Password Baru" defaultValue={dynamicCreds.password} required disabled={adminActionLoadingId === reg.id} />
+                                      <button type="submit" className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }} disabled={adminActionLoadingId === reg.id}>Buat Akun</button>
+                                    </form>
+                                  )}
+        
+                                  {/* Aksi Pasif: Selesai */}
+                                  {!['Menunggu Verifikasi', 'Terverifikasi', 'Menunggu Hasil Psikotest', 'Menunggu Username & Password'].includes(reg.status) && (
+                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Proses Selesai / Pasif</span>
+                                  )}
+                                </td>
+                              </tr>
+                              
+                              {/* Expanded Sub-Row for Ledger & Details */}
+                              {expandedRegId === reg.id && (
+                                <tr>
+                                  <td colSpan={7} style={{ padding: '16px 24px', backgroundColor: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)' }}>
+                                    <div className="glass-panel animate-fade-in" style={{ padding: '20px', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}>
+                                      <h5 style={{ fontWeight: 700, margin: '0 0 16px 0', fontSize: '0.85rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        📋 Buku Besar Pembayaran & Detail Siswa ({reg.metode_pembayaran || 'Belum Pilih Metode'})
+                                      </h5>
+
+                                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px', fontSize: '0.8rem' }}>
+                                        <div>
+                                          <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Nama Lengkap Ayah:</div>
+                                          <div style={{ fontWeight: 600, marginTop: '2px', color: 'var(--text-primary)' }}>{reg.nama_ayah || reg.nama_orang_tua || '-'}</div>
+                                        </div>
+                                        <div>
+                                          <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Nama Lengkap Ibu:</div>
+                                          <div style={{ fontWeight: 600, marginTop: '2px', color: 'var(--text-primary)' }}>{reg.nama_ibu || '-'}</div>
+                                        </div>
+                                        <div>
+                                          <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Asal Sekolah / PAUD:</div>
+                                          <div style={{ fontWeight: 600, marginTop: '2px', color: 'var(--text-primary)' }}>{reg.asal_sekolah || '-'}</div>
+                                        </div>
+                                        <div>
+                                          <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Alamat Rumah:</div>
+                                          <div style={{ fontWeight: 600, marginTop: '2px', color: 'var(--text-primary)' }}>{reg.alamat_rumah || '-'}</div>
+                                        </div>
+                                        <div>
+                                          <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Pilihan Kelas Tujuan:</div>
+                                          <div style={{ fontWeight: 600, marginTop: '2px', color: 'var(--accent-color)' }}>{reg.pilihan_kelas || '-'}</div>
+                                        </div>
+                                        <div>
+                                          <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Tanggal Lahir Anak:</div>
+                                          <div style={{ fontWeight: 600, marginTop: '2px', color: 'var(--text-primary)' }}>{reg.tanggal_lahir || '-'}</div>
+                                        </div>
+                                        <div>
+                                          <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Jadwal Psikotes Saat Ini:</div>
+                                          <div style={{ fontWeight: 600, marginTop: '2px', color: 'var(--text-primary)', lineHeight: 1.4 }}>
+                                            {reg.tanggal_psikotest ? (
+                                              <>
+                                                <div>📅 {reg.tanggal_psikotest} | ⏰ {reg.waktu_psikotest || '08:00 WIB'}</div>
+                                                <div>📍 Ruang: {reg.lokasi_psikotest}</div>
+                                                {reg.catatan_psikotest && (
+                                                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', fontStyle: 'italic', marginTop: '2px' }}>
+                                                    Catatan: {reg.catatan_psikotest}
+                                                  </div>
+                                                )}
+                                                {historyList.length > 0 && (
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => openHistoryModal(reg)}
+                                                    style={{
+                                                      marginTop: '4px',
+                                                      background: 'none',
+                                                      border: 'none',
+                                                      color: 'var(--accent-color)',
+                                                      fontSize: '0.75rem',
+                                                      fontWeight: 700,
+                                                      cursor: 'pointer',
+                                                      padding: 0,
+                                                      textDecoration: 'underline'
+                                                    }}
+                                                  >
+                                                    Lihat Riwayat {historyList.length} Perubahan Jadwal →
+                                                  </button>
+                                                )}
+                                              </>
+                                            ) : (
+                                              'Belum Terjadwal'
+                                            )}
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Akun Akses Portal:</div>
+                                          <div style={{ fontWeight: 600, marginTop: '2px', color: 'var(--text-primary)' }}>
+                                            {reg.siswa_username ? `User: ${reg.siswa_username} | Pass: ${reg.siswa_password}` : 'Belum Dibuat'}
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {reg.metode_pembayaran && (
+                                        <>
+                                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '20px', textAlign: 'left' }}>
+                                            <div style={{ borderLeft: '3px solid var(--accent-color)', paddingLeft: '8px' }}>
+                                              <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Kewajiban Uang Pangkal</div>
+                                              <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)' }}>{formatCurrency(obligation)}</div>
+                                            </div>
+                                            <div style={{ borderLeft: '3px solid #22c55e', paddingLeft: '8px' }}>
+                                              <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Total Terbayar</div>
+                                              <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#22c55e' }}>{formatCurrency(paid)}</div>
+                                            </div>
+                                            <div style={{ borderLeft: `3px solid ${arrears > 0 ? '#ef4444' : '#22c55e'}`, paddingLeft: '8px' }}>
+                                              <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Sisa Tunggakan</div>
+                                              <div style={{ fontSize: '0.95rem', fontWeight: 800, color: arrears > 0 ? '#ef4444' : '#22c55e' }}>{formatCurrency(arrears)}</div>
+                                            </div>
+                                          </div>
+
+                                          {/* Termin List */}
+                                          <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+                                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem', textAlign: 'left' }}>
+                                              <thead>
+                                                <tr style={{ backgroundColor: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
+                                                  <th style={{ padding: '8px' }}>Termin Cicilan</th>
+                                                  <th style={{ padding: '8px' }}>Nominal</th>
+                                                  <th style={{ padding: '8px' }}>Bukti Pembayaran (Unduh)</th>
+                                                </tr>
+                                              </thead>
+                                              <tbody>
+                                                <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                                  <td style={{ padding: '8px' }}>Pendaftaran (Formulir)</td>
+                                                  <td style={{ padding: '8px' }}>{formatCurrency(getRegistrationFee(reg.nama_unit || '', reg.tahun_ajaran))}</td>
+                                                  <td style={{ padding: '8px' }}>
+                                                    {reg.bukti_bayar_url ? (
+                                                      <button 
+                                                        type="button"
+                                                        onClick={() => openProofModal(getProofFileUrl(reg.id, 'bukti_bayar_url', reg.bukti_bayar_url), 'Bukti Transfer Pendaftaran (Formulir)', reg.nama_anak)}
+                                                        style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent-color)', fontWeight: 600, cursor: 'pointer', fontSize: '0.75rem' }}
+                                                      >
+                                                        🔗 Lihat Bukti Formulir
+                                                      </button>
+                                                    ) : 'Belum upload'}
+                                                  </td>
+                                                </tr>
+                                                
+                                                {reg.metode_pembayaran === 'Cash' && (
+                                                  <tr>
+                                                    <td style={{ padding: '8px' }}>Uang Masuk Full Payment</td>
+                                                    <td style={{ padding: '8px' }}>{formatCurrency(obligation)}</td>
+                                                    <td style={{ padding: '8px' }}>
+                                                      {reg.bukti_full_payment ? (
+                                                        <button 
+                                                          type="button"
+                                                          onClick={() => openProofModal(getProofFileUrl(reg.id, 'bukti_full_payment', reg.bukti_full_payment), 'Bukti Pembayaran Lunas', reg.nama_anak)}
+                                                          style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent-color)', fontWeight: 600, cursor: 'pointer', fontSize: '0.75rem' }}
+                                                        >
+                                                          🔗 Lihat Bukti Lunas
+                                                        </button>
+                                                      ) : (
+                                                        <span style={{ color: 'var(--text-secondary)' }}>Belum upload</span>
+                                                      )}
+                                                    </td>
+                                                  </tr>
+                                                )}
+
+                                                {reg.metode_pembayaran === 'Angsuran' && (
+                                                  <>
+                                                    <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                                      <td style={{ padding: '8px' }}>Angsuran 1 (50%)</td>
+                                                      <td style={{ padding: '8px' }}>{formatCurrency(obligation * 0.5)}</td>
+                                                      <td style={{ padding: '8px' }}>
+                                                        {reg.bukti_angsuran_1 ? (
+                                                          <button 
+                                                            type="button"
+                                                            onClick={() => openProofModal(getProofFileUrl(reg.id, 'bukti_angsuran_1', reg.bukti_angsuran_1), 'Bukti Pembayaran Angsuran 1', reg.nama_anak)}
+                                                            style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent-color)', fontWeight: 600, cursor: 'pointer', fontSize: '0.75rem' }}
+                                                          >
+                                                            🔗 Lihat Bukti Angsuran 1
+                                                          </button>
+                                                        ) : (
+                                                          <span style={{ color: 'var(--text-secondary)' }}>Belum upload</span>
+                                                        )}
+                                                      </td>
+                                                    </tr>
+                                                    <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                                      <td style={{ padding: '8px' }}>Angsuran 2 (25%)</td>
+                                                      <td style={{ padding: '8px' }}>{formatCurrency(obligation * 0.25)}</td>
+                                                      <td style={{ padding: '8px' }}>
+                                                        {reg.bukti_angsuran_2 ? (
+                                                          <button 
+                                                            type="button"
+                                                            onClick={() => openProofModal(getProofFileUrl(reg.id, 'bukti_angsuran_2', reg.bukti_angsuran_2), 'Bukti Pembayaran Angsuran 2', reg.nama_anak)}
+                                                            style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent-color)', fontWeight: 600, cursor: 'pointer', fontSize: '0.75rem' }}
+                                                          >
+                                                            🔗 Lihat Bukti Angsuran 2
+                                                          </button>
+                                                        ) : (
+                                                          <span style={{ color: 'var(--text-secondary)' }}>Belum upload</span>
+                                                        )}
+                                                      </td>
+                                                    </tr>
+                                                    <tr>
+                                                      <td style={{ padding: '8px' }}>Angsuran 3 (25%)</td>
+                                                      <td style={{ padding: '8px' }}>{formatCurrency(obligation * 0.25)}</td>
+                                                      <td style={{ padding: '8px' }}>
+                                                        {reg.bukti_angsuran_3 ? (
+                                                          <button 
+                                                            type="button"
+                                                            onClick={() => openProofModal(getProofFileUrl(reg.id, 'bukti_angsuran_3', reg.bukti_angsuran_3), 'Bukti Pembayaran Angsuran 3 (Pelunasan)', reg.nama_anak)}
+                                                            style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent-color)', fontWeight: 600, cursor: 'pointer', fontSize: '0.75rem' }}
+                                                          >
+                                                            🔗 Lihat Bukti Angsuran 3
+                                                          </button>
+                                                        ) : (
+                                                          <span style={{ color: 'var(--text-secondary)' }}>Belum upload</span>
+                                                        )}
+                                                      </td>
+                                                    </tr>
+                                                  </>
+                                                )}
+                                              </tbody>
+                                            </table>
+                                          </div>
+                                        </>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          );
+                        })
+                      )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* VIEW 2: TABEL INFO JADWAL & RESCHEDULE PSIKOTES (Fitur Khusus Admin Unit) */}
+              {ppdbSubSection === 'jadwal_psikotes' && (
+                <div className="animate-fade-in">
+                  {/* Summary Cards Jadwal Psikotes */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gap: '16px',
+                    marginBottom: '24px'
+                  }}>
+                    <div style={{
+                      backgroundColor: 'var(--bg-secondary)',
+                      padding: '16px 20px',
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1px solid var(--border-color)',
+                      borderLeft: '4px solid var(--accent-color)'
+                    }}>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Total Calon Siswa Terverifikasi</div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 800, marginTop: '4px', color: 'var(--text-primary)' }}>
+                        {filteredRegistrants.filter(r => r.status !== 'Menunggu Verifikasi' && r.status !== 'Selesai & Tidak Lanjut').length} Siswa
+                      </div>
+                    </div>
+
+                    <div style={{
+                      backgroundColor: 'var(--bg-secondary)',
+                      padding: '16px 20px',
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1px solid var(--border-color)',
+                      borderLeft: '4px solid #f59e0b'
+                    }}>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Belum Dijadwalkan (Perlu Jadwal)</div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 800, marginTop: '4px', color: '#f59e0b' }}>
+                        {unassignedPsychotestCount} Siswa
+                      </div>
+                    </div>
+
+                    <div style={{
+                      backgroundColor: 'var(--bg-secondary)',
+                      padding: '16px 20px',
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1px solid var(--border-color)',
+                      borderLeft: '4px solid #6366f1'
+                    }}>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Terjadwal (Menunggu Observasi)</div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 800, marginTop: '4px', color: '#6366f1' }}>
+                        {scheduledPsychotestCount} Siswa
+                      </div>
+                    </div>
+
+                    <div style={{
+                      backgroundColor: 'var(--bg-secondary)',
+                      padding: '16px 20px',
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1px solid var(--border-color)',
+                      borderLeft: '4px solid #22c55e'
+                    }}>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Selesai Psikotes / Lulus</div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 800, marginTop: '4px', color: '#22c55e' }}>
+                        {finishedPsychotestCount} Siswa
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Filter Status Pills & Search Box */}
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '16px',
+                    marginBottom: '20px'
+                  }}>
+                    {/* Filter Pills */}
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {[
+                        { id: 'all', label: '🌟 Semua Jadwal', count: filteredRegistrants.length },
+                        { id: 'unassigned', label: '⏳ Belum Dijadwalkan', count: unassignedPsychotestCount },
+                        { id: 'scheduled', label: '📅 Terjadwal (Aktif)', count: scheduledPsychotestCount },
+                        { id: 'finished', label: '✅ Selesai Psikotes', count: finishedPsychotestCount }
+                      ].map(tab => (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setPsychotestFilter(tab.id as any)}
+                          style={{
+                            padding: '8px 16px',
+                            borderRadius: '20px',
+                            fontSize: '0.8rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            border: '1px solid var(--border-color)',
+                            backgroundColor: psychotestFilter === tab.id ? 'var(--accent-color)' : 'var(--bg-secondary)',
+                            color: psychotestFilter === tab.id ? '#ffffff' : 'var(--text-secondary)',
+                            transition: 'all 0.2s ease',
+                            outline: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
+                        >
+                          {tab.label} <span style={{ opacity: 0.85, fontSize: '0.75rem' }}>({tab.count})</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Search Box */}
+                    <div style={{ position: 'relative', minWidth: '260px' }}>
+                      <input
+                        type="text"
+                        placeholder="🔍 Cari nama anak / ayah / ibu / no reg..."
+                        value={psychotestSearch}
+                        onChange={(e) => setPsychotestSearch(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '8px 14px',
+                          borderRadius: 'var(--radius-sm)',
+                          border: '1px solid var(--border-color)',
+                          backgroundColor: 'var(--bg-secondary)',
+                          color: 'var(--text-primary)',
+                          fontSize: '0.85rem',
+                          outline: 'none'
+                        }}
+                      />
+                      {psychotestSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setPsychotestSearch('')}
+                          style={{
+                            position: 'absolute',
+                            right: '8px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: 'var(--text-secondary)',
+                            fontSize: '0.8rem'
+                          }}
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Tabel Jadwal & Reschedule Psikotes */}
+                  <div style={{ overflowX: 'auto', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
+                      <thead>
+                        <tr style={{ backgroundColor: 'var(--bg-secondary)', borderBottom: '2px solid var(--border-color)', color: 'var(--text-secondary)' }}>
+                          <th style={{ padding: '12px 14px', width: '40px' }}>No</th>
+                          <th style={{ padding: '12px 14px' }}>No Pendaftaran & Unit</th>
+                          <th style={{ padding: '12px 14px' }}>Calon Siswa</th>
+                          <th style={{ padding: '12px 14px' }}>Orang Tua & Asal Sekolah</th>
+                          <th style={{ padding: '12px 14px' }}>Jadwal Psikotes Saat Ini</th>
+                          <th style={{ padding: '12px 14px' }}>Catatan & Status</th>
+                          <th style={{ padding: '12px 14px' }}>Riwayat Reschedule</th>
+                          <th style={{ padding: '12px 14px', textAlign: 'right' }}>Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {psychotestRegistrants.length === 0 ? (
+                          <tr>
+                            <td colSpan={8} style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                              Tidak ditemukan data jadwal psikotes untuk kriteria filter ini.
+                            </td>
+                          </tr>
+                        ) : (
+                          psychotestRegistrants.map((reg: any, idx: number) => {
+                            let historyList: any[] = [];
+                            try {
+                              if (reg.history_jadwal_psikotest) {
+                                historyList = JSON.parse(reg.history_jadwal_psikotest);
+                                if (!Array.isArray(historyList)) historyList = [];
+                              }
+                            } catch (e) {}
+
+                            const isScheduled = !!reg.tanggal_psikotest;
+                            const hasHistory = historyList.length > 0;
+
+                            return (
+                              <tr key={reg.id} style={{ borderBottom: '1px solid var(--border-color)', backgroundColor: 'transparent' }}>
+                                <td style={{ padding: '14px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                                  {idx + 1}
+                                </td>
+
+                                <td style={{ padding: '14px' }}>
+                                  <span style={{ fontWeight: 700, color: 'var(--accent-color)', fontFamily: 'monospace' }}>
+                                    {reg.no_pendaftaran}
+                                  </span>
+                                  <div style={{ marginTop: '3px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                    🏫 {reg.nama_unit} {reg.pilihan_kelas ? `(${reg.pilihan_kelas})` : ''} <br/>
+                                    📅 TA: <strong>{reg.tahun_ajaran}</strong>
+                                  </div>
+                                </td>
+
+                                <td style={{ padding: '14px' }}>
+                                  <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)' }}>{reg.nama_anak}</strong>
+                                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                                    🎂 Lahir: {reg.tanggal_lahir || '-'}
+                                  </div>
+                                </td>
+
+                                <td style={{ padding: '14px' }}>
+                                  <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                                    {reg.nama_ayah && reg.nama_ibu ? (
+                                      <>
+                                        <div>👨 {reg.nama_ayah}</div>
+                                        <div>👩 {reg.nama_ibu}</div>
+                                      </>
+                                    ) : (
+                                      <div>👥 {reg.nama_orang_tua || '-'}</div>
+                                    )}
+                                  </div>
+                                  {reg.asal_sekolah && (
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                                      🏫 Asal: <strong>{reg.asal_sekolah}</strong>
+                                    </div>
+                                  )}
+                                  <div style={{ marginTop: '4px' }}>
+                                    <a
+                                      href={`https://wa.me/${(reg.whatsapp || '').replace(/[^0-9]/g, '')}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                        color: '#22c55e',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 700,
+                                        textDecoration: 'none',
+                                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                                        padding: '2px 8px',
+                                        borderRadius: '6px'
+                                      }}
+                                    >
+                                      💬 +{reg.whatsapp}
+                                    </a>
+                                  </div>
+                                </td>
+
+                                <td style={{ padding: '14px' }}>
+                                  {isScheduled ? (
+                                    <div style={{ backgroundColor: 'rgba(99, 102, 241, 0.06)', padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+                                      <div style={{ fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        📅 {new Date(reg.tanggal_psikotest).toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
+                                      </div>
+                                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                                        ⏰ {reg.waktu_psikotest || '08:00 WIB'}
+                                      </div>
+                                      <div style={{ fontSize: '0.75rem', color: 'var(--accent-color)', fontWeight: 600, marginTop: '2px' }}>
+                                        📍 {reg.lokasi_psikotest || 'Ruang Observasi Utama'}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <span style={{
+                                      display: 'inline-block',
+                                      padding: '4px 8px',
+                                      borderRadius: '6px',
+                                      backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                      color: '#ef4444',
+                                      fontSize: '0.75rem',
+                                      fontWeight: 700
+                                    }}>
+                                      ⏳ Belum Dijadwalkan
+                                    </span>
+                                  )}
+                                </td>
+
+                                <td style={{ padding: '14px' }}>
+                                  <span style={{
+                                    fontSize: '0.7rem',
+                                    fontWeight: 700,
+                                    padding: '3px 8px',
+                                    borderRadius: '12px',
+                                    textTransform: 'uppercase',
+                                    backgroundColor: reg.status === 'Selesai' ? 'rgba(34,197,94,0.1)' : reg.status === 'Menunggu Hasil Psikotest' ? 'rgba(99,102,241,0.1)' : 'rgba(234,179,8,0.1)',
+                                    color: reg.status === 'Selesai' ? '#22c55e' : reg.status === 'Menunggu Hasil Psikotest' ? '#6366f1' : '#eab308'
+                                  }}>
+                                    {reg.status}
+                                  </span>
+                                  {reg.catatan_psikotest && (
+                                    <div style={{ marginTop: '6px', fontSize: '0.75rem', color: 'var(--text-secondary)', fontStyle: 'italic', maxWidth: '160px' }}>
+                                      "{reg.catatan_psikotest}"
+                                    </div>
+                                  )}
+                                  {reg.hasil_psikotest && (
+                                    <div style={{ marginTop: '4px', fontSize: '0.75rem', fontWeight: 800, color: reg.hasil_psikotest === 'LULUS' ? '#22c55e' : '#ef4444' }}>
+                                      Hasil: {reg.hasil_psikotest}
+                                    </div>
+                                  )}
+                                </td>
+
+                                <td style={{ padding: '14px' }}>
+                                  {hasHistory ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => openHistoryModal(reg)}
+                                      style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                        padding: '4px 10px',
+                                        borderRadius: '8px',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 700,
+                                        cursor: 'pointer',
+                                        border: '1px solid rgba(245, 158, 11, 0.4)',
+                                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                                        color: '#d97706',
+                                        transition: 'all 0.15s ease'
+                                      }}
+                                    >
+                                      🔄 {historyList.length}x Di-Reschedule (Lihat)
+                                    </button>
+                                  ) : (
+                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                      {isScheduled ? 'Jadwal Awal' : '-'}
+                                    </span>
+                                  )}
+                                </td>
+
+                                <td style={{ padding: '14px', textAlign: 'right' }}>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end' }}>
+                                    {/* Tombol Reschedule / Jadwalkan */}
+                                    <button
+                                      type="button"
+                                      onClick={() => openRescheduleModal(reg)}
+                                      className="btn-primary"
+                                      style={{
+                                        padding: '6px 12px',
+                                        fontSize: '0.75rem',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                        backgroundColor: isScheduled ? '#f59e0b' : 'var(--accent-color)',
+                                        backgroundImage: 'none'
+                                      }}
+                                      disabled={adminActionLoadingId === reg.id}
+                                    >
+                                      {isScheduled ? '🔄 Reschedule Jadwal' : '🗓️ Jadwalkan Psikotes'}
+                                    </button>
+
+                                    {/* Tombol Input Hasil jika sedang menunggu hasil */}
+                                    {reg.status === 'Menunggu Hasil Psikotest' && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setPpdbSubSection('pendaftar');
+                                          setExpandedRegId(reg.id);
+                                        }}
+                                        style={{
+                                          background: 'none',
+                                          border: 'none',
+                                          color: 'var(--accent-color)',
+                                          fontSize: '0.75rem',
+                                          fontWeight: 700,
+                                          cursor: 'pointer',
+                                          padding: 0,
+                                          textDecoration: 'underline'
+                                        }}
+                                      >
+                                        ✍️ Input Hasil / Kelulusan →
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </section>
           );
         })()}
 
@@ -3504,6 +4184,364 @@ export default function DashboardClient({
                   fontWeight: 600,
                   fontSize: '0.8rem'
                 }}
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* MODAL RESCHEDULE JADWAL PSIKOTEST */}
+      {rescheduleModal.isOpen && rescheduleModal.reg && (
+        <div 
+          onClick={() => !rescheduleModal.loading && setRescheduleModal(prev => ({ ...prev, isOpen: false }))}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.65)',
+            backdropFilter: 'blur(6px)',
+            zIndex: 100000,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '20px'
+          }}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: 'var(--bg-card, #ffffff)',
+              borderRadius: '16px',
+              maxWidth: '540px',
+              width: '100%',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
+              border: '1px solid var(--border-color)',
+              overflow: 'hidden',
+              animation: 'fade-in 0.2s ease-out'
+            }}
+          >
+            {/* Modal Header */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '18px 24px',
+              borderBottom: '1px solid var(--border-color)',
+              backgroundColor: 'var(--bg-primary)'
+            }}>
+              <div>
+                <h4 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>📅</span> Reschedule Jadwal Psikotest
+                </h4>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                  Siswa: <strong style={{ color: 'var(--text-primary)' }}>{rescheduleModal.reg.nama_anak}</strong> ({rescheduleModal.reg.no_pendaftaran || rescheduleModal.reg.id})
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={rescheduleModal.loading}
+                onClick={() => setRescheduleModal(prev => ({ ...prev, isOpen: false }))}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: 'var(--text-secondary)',
+                  padding: '4px 8px',
+                  borderRadius: '6px'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Current Schedule Info Box */}
+            <div style={{
+              margin: '20px 24px 0 24px',
+              padding: '12px 16px',
+              borderRadius: '10px',
+              backgroundColor: 'rgba(59, 130, 246, 0.08)',
+              border: '1px dashed #3b82f6',
+              fontSize: '0.85rem',
+              color: 'var(--text-secondary)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '4px'
+            }}>
+              <span style={{ fontWeight: 700, color: '#2563eb' }}>📌 Jadwal Saat Ini:</span>
+              <div>Tanggal: <strong>{rescheduleModal.reg.tanggal_psikotest || 'Belum diatur'}</strong> | Waktu: <strong>{rescheduleModal.reg.waktu_psikotest || '08:00 - 10:00 WIB'}</strong></div>
+              <div>Lokasi / Ruang: <strong>{rescheduleModal.reg.lokasi_psikotest || '-'}</strong></div>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleRescheduleSubmit} style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Tanggal Baru *</label>
+                  <input
+                    type="date"
+                    required
+                    className="form-input"
+                    value={rescheduleModal.tanggal}
+                    onChange={(e) => setRescheduleModal(prev => ({ ...prev, tanggal: e.target.value }))}
+                    disabled={rescheduleModal.loading}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Waktu / Sesi *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Contoh: 08:30 - 10:00 WIB"
+                    className="form-input"
+                    value={rescheduleModal.waktu}
+                    onChange={(e) => setRescheduleModal(prev => ({ ...prev, waktu: e.target.value }))}
+                    disabled={rescheduleModal.loading}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Lokasi / Ruangan Psikotest *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: Gedung A - Ruang Konseling Psikologi Lt. 2"
+                  className="form-input"
+                  value={rescheduleModal.lokasi}
+                  onChange={(e) => setRescheduleModal(prev => ({ ...prev, lokasi: e.target.value }))}
+                  disabled={rescheduleModal.loading}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Alasan Reschedule (Penting)</label>
+                <input
+                  type="text"
+                  placeholder="Contoh: Permintaan wali murid karena sakit / penyesuaian jadwal asesor"
+                  className="form-input"
+                  value={rescheduleModal.alasan}
+                  onChange={(e) => setRescheduleModal(prev => ({ ...prev, alasan: e.target.value }))}
+                  disabled={rescheduleModal.loading}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600, fontSize: '0.85rem' }}>Catatan / Perlengkapan Peserta</label>
+                <textarea
+                  rows={2}
+                  placeholder="Contoh: Membawa alat tulis 2B dan didampingi salah satu orang tua..."
+                  className="form-input"
+                  value={rescheduleModal.catatan}
+                  onChange={(e) => setRescheduleModal(prev => ({ ...prev, catatan: e.target.value }))}
+                  disabled={rescheduleModal.loading}
+                  style={{ resize: 'vertical' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px', paddingTop: '12px', borderTop: '1px solid var(--border-color)' }}>
+                <button
+                  type="button"
+                  disabled={rescheduleModal.loading}
+                  onClick={() => setRescheduleModal(prev => ({ ...prev, isOpen: false }))}
+                  className="btn-secondary"
+                  style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'transparent', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={rescheduleModal.loading}
+                  className="btn-primary"
+                  style={{ padding: '8px 20px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  {rescheduleModal.loading ? 'Menyimpan...' : '💾 Simpan Reschedule'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL HISTORY SCHEDULE JADWAL PSIKOTEST SEBELUMNYA */}
+      {historyModal.isOpen && historyModal.reg && (
+        <div 
+          onClick={() => setHistoryModal(prev => ({ ...prev, isOpen: false }))}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.65)',
+            backdropFilter: 'blur(6px)',
+            zIndex: 100000,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '20px'
+          }}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: 'var(--bg-card, #ffffff)',
+              borderRadius: '16px',
+              maxWidth: '600px',
+              width: '100%',
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
+              border: '1px solid var(--border-color)',
+              overflow: 'hidden',
+              animation: 'fade-in 0.2s ease-out'
+            }}
+          >
+            {/* Modal Header */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '18px 24px',
+              borderBottom: '1px solid var(--border-color)',
+              backgroundColor: 'var(--bg-primary)'
+            }}>
+              <div>
+                <h4 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>📜</span> Riwayat (History) Jadwal Psikotest
+                </h4>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                  Siswa: <strong style={{ color: 'var(--text-primary)' }}>{historyModal.reg.nama_anak}</strong> ({historyModal.reg.no_pendaftaran || historyModal.reg.id})
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setHistoryModal(prev => ({ ...prev, isOpen: false }))}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: 'var(--text-secondary)',
+                  padding: '4px 8px',
+                  borderRadius: '6px'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div style={{ padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {/* Active / Current Schedule */}
+              <div style={{
+                padding: '16px',
+                borderRadius: '12px',
+                backgroundColor: 'rgba(34, 197, 94, 0.08)',
+                border: '1px solid rgba(34, 197, 94, 0.3)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    ✨ Jadwal Aktif Saat Ini
+                  </span>
+                  <span className="badge badge-success" style={{ fontSize: '0.75rem', padding: '2px 8px' }}>Active</span>
+                </div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                  🗓 {historyModal.reg.tanggal_psikotest || 'Belum Dijadwalkan'}
+                  {historyModal.reg.waktu_psikotest && <span> • ⏰ {historyModal.reg.waktu_psikotest}</span>}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                  📍 Lokasi: <strong>{historyModal.reg.lokasi_psikotest || '-'}</strong>
+                </div>
+                {historyModal.reg.catatan_psikotest && (
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', background: 'rgba(0,0,0,0.03)', padding: '8px 12px', borderRadius: '6px' }}>
+                    📝 Catatan: {historyModal.reg.catatan_psikotest}
+                  </div>
+                )}
+              </div>
+
+              {/* Timeline Header */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+                <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  ⏳ Log Perubahan Jadwal Sebelumnya
+                </span>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', background: 'var(--bg-secondary)', padding: '2px 8px', borderRadius: '12px' }}>
+                  {historyModal.history.length} kali reschedule
+                </span>
+              </div>
+
+              {/* Timeline Items */}
+              {historyModal.history.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '30px 20px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                  Belum ada riwayat reschedule untuk peserta ini. Jadwal belum pernah diubah dari jadwal pertama.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', position: 'relative' }}>
+                  {historyModal.history.map((item: any, idx: number) => (
+                    <div 
+                      key={idx}
+                      style={{
+                        padding: '14px 16px',
+                        borderRadius: '10px',
+                        backgroundColor: 'var(--bg-secondary)',
+                        border: '1px solid var(--border-color)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px',
+                        fontSize: '0.85rem',
+                        position: 'relative'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
+                        <span style={{ fontWeight: 700, color: 'var(--accent-color)' }}>
+                          #Jadwal Sebelumnya {historyModal.history.length - idx}
+                        </span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                          Direschedule: {item.rescheduled_at || '-'} {item.rescheduled_by ? `oleh ${item.rescheduled_by}` : ''}
+                        </span>
+                      </div>
+                      <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+                        📅 {item.tanggal_psikotest || '-'} • ⏰ {item.waktu_psikotest || '-'}
+                      </div>
+                      <div style={{ color: 'var(--text-secondary)' }}>
+                        📍 Ruangan: {item.lokasi_psikotest || '-'}
+                      </div>
+                      {item.alasan_reschedule && (
+                        <div style={{ color: '#d97706', backgroundColor: 'rgba(217, 119, 6, 0.08)', padding: '6px 10px', borderRadius: '6px', marginTop: '4px' }}>
+                          💡 <strong>Alasan:</strong> {item.alasan_reschedule}
+                        </div>
+                      )}
+                      {item.catatan_psikotest && (
+                        <div style={{ color: 'var(--text-secondary)', fontStyle: 'italic', fontSize: '0.8rem' }}>
+                          Catatan: {item.catatan_psikotest}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              padding: '14px 24px',
+              borderTop: '1px solid var(--border-color)',
+              backgroundColor: 'var(--bg-primary)'
+            }}>
+              <button
+                type="button"
+                onClick={() => setHistoryModal(prev => ({ ...prev, isOpen: false }))}
+                className="btn-secondary"
+                style={{ padding: '8px 18px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'transparent', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
               >
                 Tutup
               </button>

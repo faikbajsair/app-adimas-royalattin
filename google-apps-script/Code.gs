@@ -24,6 +24,11 @@ function doPost(e) {
       } else {
         if (sheet.getLastRow() === 0 && headers.length > 0) {
           sheet.appendRow(headers);
+        } else if (headers.length > 0) {
+          const currentHeaders = sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), 1)).getValues()[0];
+          if (headers.length > currentHeaders.length) {
+            sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+          }
         }
       }
       return ContentService.createTextOutput(JSON.stringify({ success: true }))

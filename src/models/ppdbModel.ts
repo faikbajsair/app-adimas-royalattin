@@ -8,6 +8,9 @@ export interface PPDBRegistration {
   tahun_ajaran: string;
   nama_anak: string;
   nama_orang_tua: string;
+  nama_ayah?: string; // Nama Ayah
+  nama_ibu?: string; // Nama Ibu
+  asal_sekolah?: string; // Asal Sekolah / PAUD
   whatsapp: string;
   alamat_rumah: string;
   bukti_bayar_url: string;
@@ -34,6 +37,7 @@ export interface PPDBRegistration {
   catatan_psikotest: string;
   hasil_psikotest: 'LULUS' | 'TIDAK LULUS' | '';
   surat_penerimaan_url: string;
+  history_jadwal_psikotest?: string; // Riwayat schedule jadwal psikotes JSON
   
   metode_pembayaran: 'Cash' | 'Angsuran' | '';
   bukti_angsuran_1: string;
@@ -52,7 +56,7 @@ export interface PPDBRegistration {
 }
 
 export class PpdbModel extends BaseModel {
-  private static HEADERS = [
+  public static HEADERS = [
     'ID',
     'No Pendaftaran',
     'Tahun Ajaran',
@@ -84,7 +88,11 @@ export class PpdbModel extends BaseModel {
     'Tanggal Lahir',
     'Waktu Psikotest',
     'Catatan Psikotest',
-    'Pilihan Kelas'
+    'Pilihan Kelas',
+    'Nama Ayah',
+    'Nama Ibu',
+    'Asal Sekolah',
+    'History Jadwal Psikotest'
   ];
 
   constructor() {
@@ -97,7 +105,10 @@ export class PpdbModel extends BaseModel {
     pilihan_kelas: string;
     tahun_ajaran: string;
     nama_anak: string;
-    nama_orang_tua: string;
+    nama_orang_tua?: string;
+    nama_ayah?: string;
+    nama_ibu?: string;
+    asal_sekolah?: string;
     whatsapp: string;
     alamat_rumah: string;
     bukti_bayar_url: string;
@@ -151,6 +162,11 @@ export class PpdbModel extends BaseModel {
 
     const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
     
+    const namaAyah = (data.nama_ayah || '').trim();
+    const namaIbu = (data.nama_ibu || '').trim();
+    const asalSekolah = (data.asal_sekolah || '').trim();
+    const namaOrangTua = (data.nama_orang_tua || '').trim() || (namaAyah && namaIbu ? `${namaAyah} & ${namaIbu}` : (namaAyah || namaIbu || '-'));
+
     const newReg = {
       id,
       no_pendaftaran: noPendaftaran,
@@ -158,7 +174,10 @@ export class PpdbModel extends BaseModel {
       pilihan_kelas: data.pilihan_kelas || '',
       tahun_ajaran: data.tahun_ajaran,
       nama_anak: data.nama_anak.trim(),
-      nama_orang_tua: data.nama_orang_tua.trim(),
+      nama_orang_tua: namaOrangTua,
+      nama_ayah: namaAyah,
+      nama_ibu: namaIbu,
+      asal_sekolah: asalSekolah,
       whatsapp: data.whatsapp.trim(),
       alamat_rumah: data.alamat_rumah.trim(),
       bukti_bayar_url: data.bukti_bayar_url.trim(),
@@ -168,6 +187,7 @@ export class PpdbModel extends BaseModel {
       lokasi_psikotest: '',
       hasil_psikotest: '',
       surat_penerimaan_url: '',
+      history_jadwal_psikotest: '[]',
       
       metode_pembayaran: '',
       bukti_angsuran_1: '',
@@ -219,6 +239,10 @@ export class PpdbModel extends BaseModel {
   }
 
   private mapToObj(raw: Record<string, string>): PPDBRegistration {
+    const namaAyah = raw.nama_ayah || '';
+    const namaIbu = raw.nama_ibu || '';
+    const namaOrangTua = raw.nama_orang_tua || (namaAyah && namaIbu ? `${namaAyah} & ${namaIbu}` : (namaAyah || namaIbu || ''));
+
     return {
       id: raw.id,
       no_pendaftaran: raw.no_pendaftaran,
@@ -226,7 +250,10 @@ export class PpdbModel extends BaseModel {
       pilihan_kelas: raw.pilihan_kelas || '',
       tahun_ajaran: raw.tahun_ajaran,
       nama_anak: raw.nama_anak,
-      nama_orang_tua: raw.nama_orang_tua,
+      nama_orang_tua: namaOrangTua,
+      nama_ayah: namaAyah,
+      nama_ibu: namaIbu,
+      asal_sekolah: raw.asal_sekolah || '',
       whatsapp: raw.whatsapp,
       alamat_rumah: raw.alamat_rumah,
       bukti_bayar_url: raw.bukti_bayar_url,
@@ -238,6 +265,7 @@ export class PpdbModel extends BaseModel {
       catatan_psikotest: raw.catatan_psikotest || '',
       hasil_psikotest: (raw.hasil_psikotest || '') as any,
       surat_penerimaan_url: raw.surat_penerimaan_url || '',
+      history_jadwal_psikotest: raw.history_jadwal_psikotest || '[]',
       
       metode_pembayaran: (raw.metode_pembayaran || '') as any,
       bukti_angsuran_1: raw.bukti_angsuran_1 || '',

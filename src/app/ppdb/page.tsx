@@ -1025,10 +1025,22 @@ export default function PpdbPage() {
 
                 <div className={styles.formRow3}>
                   <div className="form-group">
-                    <label htmlFor="nama_orang_tua" className="form-label">Nama Orang Tua / Wali</label>
-                    <input type="text" id="nama_orang_tua" name="nama_orang_tua" className="form-input" required placeholder="Masukkan nama orang tua / wali" />
+                    <label htmlFor="nama_ayah" className="form-label">Nama Lengkap Ayah</label>
+                    <input type="text" id="nama_ayah" name="nama_ayah" className="form-input" required placeholder="Contoh: Budi Pratama" />
                   </div>
 
+                  <div className="form-group">
+                    <label htmlFor="nama_ibu" className="form-label">Nama Lengkap Ibu</label>
+                    <input type="text" id="nama_ibu" name="nama_ibu" className="form-input" required placeholder="Contoh: Siti Aisyah" />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="asal_sekolah" className="form-label">Asal Sekolah / PAUD / TK</label>
+                    <input type="text" id="asal_sekolah" name="asal_sekolah" className="form-input" required placeholder="Contoh: TK Melati / Belum Sekolah" />
+                  </div>
+                </div>
+
+                <div className={styles.formRow2}>
                   <div className="form-group">
                     <label htmlFor="whatsapp" className="form-label">No. WhatsApp Orang Tua (Format: 628xxx)</label>
                     <input
@@ -1258,8 +1270,16 @@ export default function PpdbPage() {
                     <div style={{ fontWeight: 600 }}>{activeReg.tanggal_lahir || '-'}</div>
                   </div>
                   <div>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Nama Wali</div>
-                    <div style={{ fontWeight: 600 }}>{activeReg.nama_orang_tua}</div>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Nama Ayah</div>
+                    <div style={{ fontWeight: 600 }}>{activeReg.nama_ayah || activeReg.nama_orang_tua || '-'}</div>
+                  </div>
+                  <div>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Nama Ibu</div>
+                    <div style={{ fontWeight: 600 }}>{activeReg.nama_ibu || '-'}</div>
+                  </div>
+                  <div>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Asal Sekolah</div>
+                    <div style={{ fontWeight: 600 }}>{activeReg.asal_sekolah || '-'}</div>
                   </div>
                   <div>
                     <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>WhatsApp</div>
@@ -1547,9 +1567,24 @@ export default function PpdbPage() {
                 {/* PANEL STATUS 3: JADWAL PSIKOTES DITERBITKAN */}
                 {activeReg.status === 'Menunggu Hasil Psikotest' && (
                   <div style={{ border: '1px solid var(--border-color)', padding: '24px', borderRadius: 'var(--radius-sm)' }}>
-                    <h4 style={{ fontWeight: 700, marginBottom: '16px' }}>
-                      📅 Jadwal Ujian / Observasi Psikotes
-                    </h4>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+                      <h4 style={{ fontWeight: 700, margin: 0 }}>
+                        📅 Jadwal Ujian / Observasi Psikotes
+                      </h4>
+                      {(() => {
+                        try {
+                          const history = JSON.parse(activeReg.history_jadwal_psikotest || '[]');
+                          if (Array.isArray(history) && history.length > 0) {
+                            return (
+                              <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '4px 10px', borderRadius: '12px', backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#d97706', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                🔄 Jadwal Telah Di-Reschedule ({history.length}x)
+                              </span>
+                            );
+                          }
+                        } catch (e) {}
+                        return null;
+                      })()}
+                    </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px', fontSize: '0.9rem', marginBottom: '16px' }}>
                       <div>
                         <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Tanggal Pelaksanaan</div>
@@ -1572,6 +1607,21 @@ export default function PpdbPage() {
                         </p>
                       </div>
                     )}
+                    {(() => {
+                      try {
+                        const history = JSON.parse(activeReg.history_jadwal_psikotest || '[]');
+                        if (Array.isArray(history) && history.length > 0) {
+                          const lastReschedule = history[history.length - 1];
+                          return (
+                            <div style={{ backgroundColor: 'rgba(245, 158, 11, 0.08)', padding: '10px 14px', borderRadius: 'var(--radius-sm)', borderLeft: '3px solid #f59e0b', marginBottom: '16px', fontSize: '0.8rem' }}>
+                              <strong>Catatan Reschedule:</strong> {lastReschedule.alasan_reschedule || 'Penyesuaian jadwal oleh admin'} 
+                              <span style={{ color: 'var(--text-secondary)', marginLeft: '6px' }}>({lastReschedule.rescheduled_at || '-'})</span>
+                            </div>
+                          );
+                        }
+                      } catch (e) {}
+                      return null;
+                    })()}
                     <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
                       *Orang tua diharapkan mendampingi calon siswa di lokasi ujian sesuai jadwal di atas dengan membawa bukti pendaftaran cetak/digital.
                     </p>

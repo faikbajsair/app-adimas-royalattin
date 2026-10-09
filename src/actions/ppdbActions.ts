@@ -159,7 +159,10 @@ const ppdbSchema = z.object({
   pilihan_kelas: z.string().min(1, 'Pilihan kelas wajib dipilih'),
   tahun_ajaran: z.string().min(1, 'Tahun ajaran harus dipilih'),
   nama_anak: z.string().min(2, 'Nama anak minimal 2 karakter'),
-  nama_orang_tua: z.string().min(2, 'Nama orang tua minimal 2 karakter'),
+  nama_ayah: z.string().min(2, 'Nama ayah minimal 2 karakter'),
+  nama_ibu: z.string().min(2, 'Nama ibu minimal 2 karakter'),
+  asal_sekolah: z.string().optional(),
+  nama_orang_tua: z.string().optional(),
   whatsapp: z.string().min(8, 'Nomor WhatsApp minimal 8 digit').regex(/^628[0-9]+$/, 'Format WA harus diawali 628xxx'),
   alamat_rumah: z.string().min(5, 'Alamat rumah minimal 5 karakter'),
   bukti_bayar_url: z.string().min(1, 'Bukti transfer biaya pendaftaran wajib diunggah'),
@@ -207,7 +210,10 @@ export async function submitPpdbRegistrationAction(prevState: any, formData: For
   const pilihan_kelas = (formData.get('pilihan_kelas') as string) || '';
   const tahun_ajaran = formData.get('tahun_ajaran') as string;
   const nama_anak = formData.get('nama_anak') as string;
-  const nama_orang_tua = formData.get('nama_orang_tua') as string;
+  const nama_ayah = (formData.get('nama_ayah') as string) || '';
+  const nama_ibu = (formData.get('nama_ibu') as string) || '';
+  const asal_sekolah = (formData.get('asal_sekolah') as string) || '';
+  const nama_orang_tua = (formData.get('nama_orang_tua') as string) || `${nama_ayah} & ${nama_ibu}`;
   const whatsapp = formData.get('whatsapp') as string;
   const alamat_rumah = formData.get('alamat_rumah') as string;
   const tanggal_lahir = formData.get('tanggal_lahir') as string;
@@ -234,7 +240,9 @@ export async function submitPpdbRegistrationAction(prevState: any, formData: For
       `👤 <b>Nama Anak:</b> ${nama_anak}\n` +
       `🎒 <b>Pilihan Kelas:</b> ${pilihan_kelas}\n` +
       `📅 <b>Tanggal Lahir:</b> ${tanggal_lahir}\n` +
-      `👥 <b>Orang Tua/Wali:</b> ${nama_orang_tua}\n` +
+      `👨 <b>Nama Ayah:</b> ${nama_ayah}\n` +
+      `👩 <b>Nama Ibu:</b> ${nama_ibu}\n` +
+      `🏫 <b>Asal Sekolah:</b> ${asal_sekolah || '-'}\n` +
       `📱 <b>WhatsApp:</b> ${whatsapp}\n` +
       `🏫 <b>Unit Sekolah:</b> ${nama_unit}\n` +
       `📅 <b>Tahun Ajaran:</b> ${tahun_ajaran}\n\n` +
@@ -277,8 +285,16 @@ export async function submitPpdbRegistrationAction(prevState: any, formData: For
                 <td style="padding: 6px 0; vertical-align: top;">${tanggal_lahir}</td>
               </tr>
               <tr>
-                <td style="padding: 6px 0; font-weight: bold; vertical-align: top;">Orang Tua / Wali:</td>
-                <td style="padding: 6px 0; vertical-align: top;">${nama_orang_tua}</td>
+                <td style="padding: 6px 0; font-weight: bold; vertical-align: top;">Nama Ayah:</td>
+                <td style="padding: 6px 0; vertical-align: top;">${nama_ayah}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; font-weight: bold; vertical-align: top;">Nama Ibu:</td>
+                <td style="padding: 6px 0; vertical-align: top;">${nama_ibu}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; font-weight: bold; vertical-align: top;">Asal Sekolah:</td>
+                <td style="padding: 6px 0; vertical-align: top;">${asal_sekolah || '-'}</td>
               </tr>
               <tr>
                 <td style="padding: 6px 0; font-weight: bold; vertical-align: top;">No. WhatsApp:</td>
@@ -302,7 +318,7 @@ export async function submitPpdbRegistrationAction(prevState: any, formData: For
           </div>
           
           <p style="font-size: 14px; color: #555555; line-height: 1.5; margin-bottom: 25px;">
-            Harap segera masuk ke Dashboard Admin Portal Akademik Royal At-Tin untuk melakukan verifikasi pembayaran pendaftaran dan menjadwalkan psikotest calon siswa ini.
+            Harap segera masuk ke Dashboard Admin Portal Akademik Royal At-Tin untuk melakukan verifikasi pembayaran pendaftaran dan menjadwalkan psikotes calon siswa ini.
           </p>
           
           <div style="text-align: center; margin-bottom: 25px;">
@@ -337,6 +353,9 @@ export async function submitPpdbRegistrationAction(prevState: any, formData: For
     pilihan_kelas,
     tahun_ajaran,
     nama_anak,
+    nama_ayah,
+    nama_ibu,
+    asal_sekolah,
     nama_orang_tua,
     whatsapp,
     alamat_rumah,
@@ -361,6 +380,9 @@ export async function submitPpdbRegistrationAction(prevState: any, formData: For
       pilihan_kelas,
       tahun_ajaran,
       nama_anak,
+      nama_ayah,
+      nama_ibu,
+      asal_sekolah,
       nama_orang_tua,
       whatsapp,
       alamat_rumah,
@@ -455,7 +477,6 @@ export async function uploadQuotaPaymentProofAction(
 
     const whatsapp = raw.whatsapp || '';
     const nama_anak = raw.nama_anak || 'Siswa';
-    const cleanWa = whatsapp.replace(/[^0-9]/g, '');
     const labelPembayaran = field.replace(/_/g, ' ').toUpperCase();
     
     // Simpan berkas bukti transfer fisik ke direktori uploads
@@ -533,10 +554,13 @@ export async function updatePpdbStatusByAdminAction(
     status?: any;
     tanggal_psikotest?: string;
     lokasi_psikotest?: string;
+    waktu_psikotest?: string;
+    catatan_psikotest?: string;
     hasil_psikotest?: 'LULUS' | 'TIDAK LULUS' | '';
     surat_penerimaan_url?: string;
     siswa_username?: string;
     siswa_password?: string;
+    history_jadwal_psikotest?: string;
   }
 ) {
   const user = await getCurrentUser();
@@ -593,6 +617,84 @@ export async function updatePpdbStatusByAdminAction(
   } catch (e: any) {
     console.error('Error updatePpdbStatusByAdminAction:', e.message);
     return { error: 'Gagal memperbarui status pendaftaran.' };
+  }
+}
+
+// Action Reschedule Jadwal Psikotes dengan pencatatan riwayat (history) lengkap
+export async function reschedulePpdbPsychotestAction(
+  id: string,
+  data: {
+    tanggal_psikotest: string;
+    waktu_psikotest: string;
+    lokasi_psikotest: string;
+    catatan_psikotest?: string;
+    alasan_reschedule: string;
+  }
+) {
+  const user = await getCurrentUser();
+  if (!user || !['admin', 'yayasan', 'admin_kbtk', 'admin_sd', 'admin_nura'].includes(user.role)) {
+    return { error: 'Anda tidak memiliki hak akses untuk tindakan ini.' };
+  }
+
+  try {
+    const ppdbModel = new PpdbModel();
+    const raw = await ppdbModel.findBy('id', id);
+    if (!raw) return { error: 'Pendaftaran tidak ditemukan.' };
+
+    if (!isAuthorizedForPpdbUnit(user.role, raw.nama_unit)) {
+      return { error: 'Anda tidak memiliki hak akses untuk unit ini.' };
+    }
+
+    // Parse existing history
+    let historyList: any[] = [];
+    if (raw.history_jadwal_psikotest) {
+      try {
+        historyList = JSON.parse(raw.history_jadwal_psikotest);
+        if (!Array.isArray(historyList)) historyList = [];
+      } catch (err) {
+        historyList = [];
+      }
+    }
+
+    // If there was a previous schedule, push it to history list
+    if (raw.tanggal_psikotest) {
+      const nowWib = new Intl.DateTimeFormat('id-ID', {
+        timeZone: 'Asia/Jakarta',
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(new Date());
+
+      historyList.push({
+        tanggal_psikotest: raw.tanggal_psikotest,
+        waktu_psikotest: raw.waktu_psikotest || '-',
+        lokasi_psikotest: raw.lokasi_psikotest || '-',
+        catatan_psikotest: raw.catatan_psikotest || '-',
+        alasan_reschedule: data.alasan_reschedule || 'Penyesuaian jadwal oleh admin',
+        rescheduled_at: nowWib,
+        rescheduled_by: user.name || user.username || 'Admin Unit'
+      });
+    }
+
+    const updated: any = {
+      ...raw,
+      tanggal_psikotest: data.tanggal_psikotest,
+      waktu_psikotest: data.waktu_psikotest,
+      lokasi_psikotest: data.lokasi_psikotest,
+      catatan_psikotest: data.catatan_psikotest || '',
+      history_jadwal_psikotest: JSON.stringify(historyList),
+      status: 'Menunggu Hasil Psikotest'
+    };
+
+    await ppdbModel.updateRegistration(Number(raw._rowNum), updated);
+    revalidatePath('/dashboard');
+    revalidatePath('/ppdb');
+    return { success: true };
+  } catch (e: any) {
+    console.error('Error reschedulePpdbPsychotestAction:', e.message);
+    return { error: 'Gagal melakukan reschedule psikotes.' };
   }
 }
 
